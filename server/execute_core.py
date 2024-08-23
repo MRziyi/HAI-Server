@@ -14,9 +14,9 @@ from server.components.websocket_manager import WebSocketManager
 
 class ExecuteCore():
 
-    def init_config(self):
+    def init_config(self,config_url):
         try:
-            with open('config/sightseeing_config.txt', 'r') as f:  # 使用 'r' 模式读取文件
+            with open(config_url, 'r') as f:  # 使用 'r' 模式读取文件
                 text = f.read()
             results = json.loads(text)
             task_name = results.get("task_name")
@@ -143,19 +143,49 @@ class ExecuteCore():
 
         await user_proxy.a_initiate_chat(global_vars.groupchat_manager, message=f"@ProcessManager@, {self.task_name}\n{self.task_req}")
 
-    def __init__(self, ws_manager:WebSocketManager):
-        
-        self.init_config()
+    def __init__(self, ws_manager:WebSocketManager,config_url):
+        self.init_config(config_url)
         self.ws_manager=ws_manager
-        self.formatter = Formatter()
+        self.is_warmup=(config_url=='config/warmup_config.txt')
+        self.formatter = Formatter(is_warmup=self.is_warmup)
 
-        self.send_to_client("config/info",
+        if(self.is_warmup):
+            self.send_to_client("config/info",
                     {
                         "task_name":self.task_name,
                         "task_req":self.task_req,
                         "agent_list":self.agents,
-                        "step_list":self.steps
+                        "step_list":self.steps,
+                        "final_tables": [
+                                {
+                                    "name": "travel_table",
+                                    "content": global_vars.warmup_table
+                                },
+                            ]
                     })
+        else:
+            self.send_to_client("config/info",
+                    {
+                        "task_name":self.task_name,
+                        "task_req":self.task_req,
+                        "agent_list":self.agents,
+                        "step_list":self.steps,
+                        "final_tables": [
+                                {
+                                    "name": "sightseeing_table",
+                                    "content": global_vars.sightseeing_table
+                                },
+                                {
+                                    "name": "dining_table",
+                                    "content": global_vars.dining_table
+                                },
+                                {
+                                    "name": "budget_table",
+                                    "content": global_vars.budget_table
+                                },
+                            ]
+                    })
+
 
     def send_to_client(self, type, data):
         asyncio.create_task(self.ws_manager.send_to_client_queue.put(json.dumps(

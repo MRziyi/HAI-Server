@@ -37,7 +37,7 @@ def print_message_callback(recipient, messages, sender, config):
     print(f"Messages from: {sender_name} sent to: {recipient.name} | num messages: {len(messages)} | message: {last_message}")
     if(sender_name=="Admin"):
         return False, None
-    elif(sender_name=="Critic" or sender_name=="ProcessManager" or len(last_message.get('content')) < 300):
+    elif(sender_name=="Critic" or sender_name=="ProcessManager" or len(last_message.get('content')) < 30):
         print_formatted_message(recipient.name, last_message)
     else:
         asyncio.create_task(format_and_print_message(recipient.name, last_message))
@@ -120,7 +120,7 @@ async def format_and_print_message(recipient_name, message):
     print("-------md_content")
     print(md_content)
     if md_content and md_content!="None":
-        global_vars.execute_core.send_to_client("solution/update",
+        global_vars.execute_core.send_to_client("solution/panel/update",
                 {
                     "solution":md_content
                 })

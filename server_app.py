@@ -14,31 +14,25 @@ ws_app = FastAPI()
 async def send_to_client_listener(ws_manager: WebSocketManager):
     while True:
         msg_to_send = await ws_manager.send_to_client_queue.get()
-        if msg_to_send == "DO_FINISH":
-            ws_manager.recv_from_client_queue.task_done()
-            break
         await ws_manager.websocket.send_text(msg_to_send)
         # print("-----SEND TO WS------\n"+msg_to_send)
         await asyncio.sleep(0.05)
 
 async def recv_from_client_listener(ws_manager: WebSocketManager):
     while True:
-        raw_data = await ws_manager.websocket.receive_text()
-        print("-----MSG FROM WS------\n"+raw_data)
+        raw_input = await ws_manager.websocket.receive_text()
+        print("-----MSG FROM WS------\n"+raw_input)
         try:
-            json_data = json.loads(raw_data)
-            type = json_data.get("type")
-            data = json_data.get("data")
+            json_input = json.loads(raw_input)
+            type = json_input.get("type")
+            data = json_input.get("data")
+            json_data = json.loads(data)
         except Exception as e:
             print("raw_data decode ERROR:", str(e))
             continue
-        if type == "DO_FINISH":
-            await ws_manager.recv_from_client_queue.put("DO_FINISH")
-            await ws_manager.send_to_client_queue.put("DO_FINISH")
-            break
-        elif type == "user/talk":
-            text = data.get("content")
-            target_agent_name = data.get("targetAgent")
+        if type == "user/talk":
+            text = json_data.get("content")
+            target_agent_name = json_data.get("targetAgent")
             if text == '':
                 return
             if global_vars.input_future and not global_vars.input_future.done() and global_vars.req_ans_agent_name == target_agent_name:
@@ -52,9 +46,15 @@ async def recv_from_client_listener(ws_manager: WebSocketManager):
                     clear_history=False
                 ))
         elif type == "user/confirm_solution":
-            text = data.get("solution")
+            text = json_data.get("solution")
             global_vars.execute_core.format_solution_to_table(text)
-        await ws_manager.recv_from_client_queue.put(data)
+        elif type=="process/start_plan":
+            if(global_vars.chat_task!=None):
+                global_vars.chat_task.cancel()
+            global_vars.execute_core.start_chat()
+        elif type=="process/finish_warmup":
+            del global_vars.execute_core
+            global_vars.execute_core = ExecuteCore(ws_manager=ws_manager,config_url='config/sightseeing_config.txt')
         await asyncio.sleep(0.05)
 
 @ws_app.websocket("/ws")
@@ -66,8 +66,7 @@ async def websocket_endpoint(websocket: WebSocket):
         send_task = asyncio.create_task(send_to_client_listener(ws_manager))
         recv_task = asyncio.create_task(recv_from_client_listener(ws_manager))
         
-        global_vars.execute_core = ExecuteCore(ws_manager=ws_manager)
-        global_vars.execute_core.start_chat()
+        global_vars.execute_core = ExecuteCore(ws_manager=ws_manager,config_url='config/warmup_config.txt')
 
         # Wait for both listeners and chat to complete
         await asyncio.gather(send_task, recv_task)

@@ -7,53 +7,23 @@ import panel as pn
 import global_vars
 
 class Formatter():
-    sightseeing_table="""| 日期    | 时间 | 李教授 | 陈教授 | 张博士 | 王同学 |
-| 6月30日 | 下午 |(具体的会议活动或观光安排，如参加开幕式或牛首山观光)|(这张表中不应该填写餐饮相关内容)|       |       |
-|         | 晚上 |       |       |       |       |
-| 7月1日  | 上午 |       |       |       |       |
-|         | 下午 |       |       |       |       |
-|         | 晚上 |       |       |       |       |
-| 7月2日  | 上午 |       |       |       |       |
-|         | 下午 |       |       |       |       |
-|         | 晚上 |       |       |       |       |
-| 7月3日  | 上午 |       |       |       |       |
-|         | 下午 |       |       |       |       |
-|         | 晚上 |       |       |       |       |
-| 7月4日  | 上午 |       |       |       |       |
-|         | 下午 |       |       |       |       |
-|         | 晚上 |       |       |       |       |
-| 7月5日  | 上午 |       |       |       |       |
-|         | 下午 |       |       |       |       |
-|         | 晚上 |       |       |       |       |
-"""
-    dining_table="""| 日期    | 时间 | 李教授 | 陈教授 | 张博士 | 王同学 |
-| 6月30日 | 晚餐 |(具体的餐饮安排，如在夫子庙品尝小吃)|       |       |       |
-| 7月1日  | 午餐 |       |       |       |       |
-|         | 晚餐 |       |       |       |       |
-| 7月2日  | 午餐 |       |       |       |       |
-|         | 晚餐 |       |       |       |       |
-| 7月3日  | 午餐 |       |       |       |       |
-|         | 晚餐 |       |       |       |       |
-| 7月4日  | 午餐 |       |       |       |       |
-|         | 晚餐 |       |       |       |       |
-| 7月5日  | 午餐 |       |       |       |       |
-|         | 晚餐 |       |       |       |       |
-"""
-    budget_table="""| 成员   | 预期预算 | 餐饮开销 | 门票开销 | 交通开销 | 合计开销 |
-| 李教授  |(具体的金额)|          |          |          |          |
-| 陈教授  |          |          |          |          |          |
-| 张博士  |          |          |          |          |          |
-| 王同学  |          |          |          |          |          |
-""" 
+    def __init__(self,is_warmup) -> None:
+        self.is_warmup=is_warmup
 
     async def generate_tables(self,text):
         if(text==''):
             return
-        format="{"+f'''
-    "sightseeing_table":"{self.sightseeing_table}",
-    "dining_table":"{self.dining_table}",
-    "budget_table":"{self.budget_table}"
+        if(self.is_warmup):
+            format="{"+f'''
+    "travel_table":"{global_vars.warmup_table}",
     '''+"}"
+        else:
+            format="{"+f'''
+    "sightseeing_table":"{global_vars.sightseeing_table}",
+    "dining_table":"{global_vars.dining_table}",
+    "budget_table":"{global_vars.budget_table}"
+    '''+"}"
+
         raw_tables = await global_vars.global_assistant.a_generate_reply(messages=[{
         "role": "user",
         "name": "Admin",
@@ -75,10 +45,27 @@ class Formatter():
         json_match = json_pattern.search(raw_tables)
         if json_match:
             json_content = json_match.group(1)
-            try:
-                tables = json.loads(json_content)
-                global_vars.execute_core.send_to_client("solution/table/update",tables)
+        else:
+            json_content=raw_tables
+        try:
+            tables = json.loads(json_content)
+            result = {"tables": []}
+            if "travel_table" in tables:
+                content = tables["travel_table"]
+                if content != "None":
+                    result["tables"].append({
+                        "name": "travel_table",
+                        "content": content
+                    })
+            else:
+                for table_name, content in tables.items():
+                    if content != "None":
+                        result["tables"].append({
+                            "name": table_name,
+                            "content": content
+                        })
+            global_vars.execute_core.send_to_client("solution/table/update",result)
                 
-            except json.JSONDecodeError as e:
-                print(f"解析失败：\n原始输出：\n{raw_tables}\n错误：{e}")
+        except json.JSONDecodeError as e:
+            print(f"解析失败：\n原始输出：\n{raw_tables}\n错误：{e}")
 
