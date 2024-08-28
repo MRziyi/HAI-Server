@@ -33,6 +33,7 @@ async def recv_from_client_listener(ws_manager: WebSocketManager):
         if type == "user/talk":
             text = json_data.get("content")
             target_agent_name = json_data.get("targetAgent")
+            ws_manager.log("USER: @"+target_agent_name+", "+text)
             if text == '':
                 return
             if global_vars.input_future and not global_vars.input_future.done() and global_vars.req_ans_agent_name == target_agent_name:
@@ -47,13 +48,16 @@ async def recv_from_client_listener(ws_manager: WebSocketManager):
                 ))
         elif type == "user/confirm_solution":
             text = json_data.get("solution")
+            ws_manager.log("CONFIRM SOLUTION: "+text)
             global_vars.execute_core.format_solution_to_table(text)
         elif type=="process/start_plan":
             if(global_vars.chat_task!=None):
                 global_vars.chat_task.cancel()
+            ws_manager.log("CHAT STARTED")
             global_vars.execute_core.start_chat()
         elif type=="process/finish_warmup":
             del global_vars.execute_core
+            ws_manager.log("WARMUP FINISHED")
             global_vars.execute_core = ExecuteCore(ws_manager=ws_manager,config_url='config/sightseeing_config.txt')
         await asyncio.sleep(0.05)
 

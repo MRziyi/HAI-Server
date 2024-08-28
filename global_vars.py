@@ -49,7 +49,7 @@ smaller_model_config={"config_list": [
 
 global_formatter= autogen.AssistantAgent(
             name='Formatter',
-            llm_config=smaller_model_config,
+            llm_config=llm_config,
             human_input_mode="NEVER",
             system_message='''你是Formatter，需要将输入的内容，按照用户要求给出json格式的输出''',
         )

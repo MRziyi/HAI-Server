@@ -40,6 +40,7 @@ def print_message_callback(recipient, messages, sender, config):
     elif(sender_name=="Critic" or sender_name=="ProcessManager" or len(last_message.get('content')) < 30):
         print_formatted_message(recipient.name, last_message)
     else:
+        print("-----format_and_print_message Called from: "+sender_name)
         asyncio.create_task(format_and_print_message(recipient.name, last_message))
     return False, None
 
@@ -75,6 +76,10 @@ def print_formatted_message(recipient_name, message):
                     "to":recipient_name,
                     "chat":f'{recipient_name}, {message_content}' if 'name' in message else message_content
                 })
+    
+    print("-------Unformatted Chat Content--------")
+    print(f'{recipient_name}, {message_content}' if 'name' in message else message_content)
+    print("-------------")
 
 
 async def format_and_print_message(recipient_name, message):
@@ -85,14 +90,14 @@ async def format_and_print_message(recipient_name, message):
         "name": "Admin",
         "content": f'''将 <text> 标签中的内容拆分为两部分：一部分是较短的内容，如提问、简短的想法或下一步打算，另一部分是较长的内容，如详细的任务、提议或计划。格式化后的输出应符合 <example> 标签中例子的结构。
 具体要求是：
-- chat: 包含 <text> 中的提问、简短的想法或下一步的打算。
-- content: 包含具体的长内容，使用 Markdown 格式。如果内容少于 10 个句子，则输出 None。
+- chat: 包含 <text> 中的提问、简短的想法或下一步的打算，不超过40字。
+- content: 包含具体的较长内容，使用 Markdown 格式。如果内容少于 3 个句子，则输出 None。
 <text>
 {content}
 </text>'''+'''
 <example>
 {
-    "chat":"请问：1. 您是否有特定的景点或活动已经在考虑之中？ 2. 您希望在参观活动中有多少时间用于观光？请您提供这些信息，以便我为每位成员制定更合适的参观计划。谢谢！"
+    "chat":"请问：1. 您是否有特定的景点或活动已经在考虑之中？谢谢！"
     "content":"None",
 }
 </example>
@@ -117,8 +122,9 @@ async def format_and_print_message(recipient_name, message):
 
     chat_content = data.get('chat', None)
     md_content = data.get('content', None)
-    print("-------md_content")
+    print("-------Formatted MD Content--------")
     print(md_content)
+    print("-------------")
     if md_content and md_content!="None":
         global_vars.execute_core.send_to_client("solution/panel/update",
                 {
@@ -126,6 +132,10 @@ async def format_and_print_message(recipient_name, message):
                 })
 
     message_content = chat_content or content
+
+    print("-------Formatted Chat Content--------")
+    print(f'{recipient_name}, {message_content}' if 'name' in message else message_content)
+    print("-------------")
 
     global_vars.execute_core.send_to_client("agent/talk",
                 {
