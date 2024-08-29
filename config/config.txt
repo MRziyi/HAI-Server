@@ -1,0 +1,53 @@
+{
+    "task_name": "旅行规划",
+    "task_req": "我与好友想要前往上海分别参加一个展会，在展会时间外我们也想到一同在上海进行观光，在上海一共停留2天，请根据我与好友的喜好，考虑时间安排、交通、餐饮、住宿、预算等因素，制定平衡合理无冲突的行程安排。\n我要参加的展会是：健康与健身博览会\n- 时间：9月11日 09:00 - 17:00\n- 地点：世博展览馆\n\n好友要参加的展会是：国际美食节\n- 时间：9月11日 12:00 - 19:00\n- 地点：上海展览中心\n",
+    "agent_list": [
+        {
+            "name": "ProcessManager",
+            "avatar": "⏩️",
+            "system_message": "负责管理任务执行进度，为Agent分配任务，或通过Admin向用户提问"
+        },
+        {
+            "name": "BudgetAgent",
+            "avatar": "💰",
+            "system_message": "负责预算分配和控制，确保旅行总花费在预算范围内。"
+        },
+        {
+            "name": "TransportAgent",
+            "avatar": "🚕",
+            "system_message": "优化交通路线和工具，确保在展会和观光之间的交通便利。"
+        },
+        {
+            "name": "DiningAgent",
+            "avatar": "🍴",
+            "system_message": "安排每日餐饮，确保满足你和好友的饮食偏好。"
+        },
+        {
+            "name": "TourAgent",
+            "avatar": "🗺️",
+            "system_message": "根据你和好友的兴趣安排观光活动，确保有丰富的旅游体验。"
+        }
+    ],
+    "step_list": [
+        {
+            "name": "制定展会与观光时间表",
+            "content": "由ProcessManager根据展会时间安排，协调你和好友的展会参与时间，并与TourAgent讨论观光活动的时间安排，确保无冲突。"
+        },
+        {
+            "name": "安排餐饮计划",
+            "content": "由DiningAgent根据Step1和Step2中的时间安排，结合你和好友的饮食偏好，制定每日餐饮计划。"
+        },
+        {
+            "name": "优化交通路线",
+            "content": "由TransportAgent根据Step1中的时间表，规划从住宿到展会及观光地点的交通路线，确保交通便利和时间高效。"
+        },
+        {
+            "name": "制定预算计划",
+            "content": "由BudgetAgent根据Step1、Step2和Step3中的安排，列出详细的预算计划，确保旅行总花费在预算范围内。"
+        },
+        {
+            "name": "输出最终行程安排",
+            "content": "由ProcessManager整合所有步骤的结果，输出最终的行程安排，任务完成。"
+        }
+    ]
+}

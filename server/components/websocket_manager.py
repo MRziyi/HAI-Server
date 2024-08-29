@@ -10,7 +10,7 @@ class WebSocketManager:
         self.websocket = websocket
         self.send_to_client_queue = asyncio.Queue()
         now = datetime.now()
-        date_str = now.strftime("%m-%d-%H-%M")
+        date_str = now.strftime("%m-%d@%H:%M")
         self.file_path = f'history/{date_str}.txt'
         # Append the log entry to the file
 
@@ -28,7 +28,7 @@ class WebSocketManager:
 
     def log(self,text):
         now = datetime.now()
-        time_str = now.strftime("%H-%M-%S")
+        time_str = now.strftime("%H:%M:%S")
         
         # Log entry
         log_entry = f"{time_str}: {text}\n"

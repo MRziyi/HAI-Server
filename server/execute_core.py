@@ -8,7 +8,6 @@ import autogen
 import uvicorn
 import global_vars
 from server.components.agents import MyConversableAgent, custom_speaker_selection_func, print_message_callback
-from server.components.table_formatter import Formatter
 from server.components.websocket_manager import WebSocketManager
 
 
@@ -145,46 +144,14 @@ class ExecuteCore():
     def __init__(self, ws_manager:WebSocketManager,config_url):
         self.init_config(config_url)
         self.ws_manager=ws_manager
-        self.is_warmup=(config_url=='config/warmup_config.txt')
-        self.formatter = Formatter(is_warmup=self.is_warmup)
 
-        if(self.is_warmup):
-            self.send_to_client("config/info",
+        self.send_to_client("config/info",
                     {
                         "task_name":self.task_name,
                         "task_req":self.task_req,
                         "agent_list":self.agents,
-                        "step_list":self.steps,
-                        "final_tables": [
-                                {
-                                    "name": "travel_table",
-                                    "content": global_vars.warmup_table
-                                },
-                            ]
+                        "step_list":self.steps
                     })
-        else:
-            self.send_to_client("config/info",
-                    {
-                        "task_name":self.task_name,
-                        "task_req":self.task_req,
-                        "agent_list":self.agents,
-                        "step_list":self.steps,
-                        "final_tables": [
-                                {
-                                    "name": "sightseeing_table",
-                                    "content": global_vars.sightseeing_table
-                                },
-                                {
-                                    "name": "dining_table",
-                                    "content": global_vars.dining_table
-                                },
-                                {
-                                    "name": "budget_table",
-                                    "content": global_vars.budget_table
-                                },
-                            ]
-                    })
-
 
     def send_to_client(self, type, data):
         asyncio.create_task(self.ws_manager.send_to_client_queue.put(json.dumps(
@@ -192,9 +159,8 @@ class ExecuteCore():
                 "type": type,
                 "data": data
             },ensure_ascii=False, indent=4)))
+        self.ws_manager.log(type+": "+str(data))
         
-    def format_solution_to_table(self,solution):
-        asyncio.create_task(self.formatter.generate_tables(solution))
 
         
     def start_chat(self):
