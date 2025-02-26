@@ -69,6 +69,7 @@ class StepList(pn.viewable.Viewer):
         self.update_step_list()
 
     def get_lists(self):
+        print(self.agents)
         return self.agents,self.steps
 
     def update_step_list(self):

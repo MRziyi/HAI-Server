@@ -37,7 +37,7 @@ def print_message_callback(recipient, messages, sender, config):
     print(f"Messages from: {sender_name} sent to: {recipient.name} | num messages: {len(messages)} | message: {last_message}")
     if(sender_name=="Admin"):
         return False, None
-    elif(sender_name=="Critic" or sender_name=="ProcessManager" or len(last_message.get('content')) < 60):
+    elif(sender_name=="Critic" or sender_name=="ProcessManager" or len(last_message.get('content')) < 100):
         print_formatted_message(recipient.name, last_message)
     else:
         print("-----format_and_print_message Called from: "+sender_name)

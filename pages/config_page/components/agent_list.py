@@ -31,39 +31,44 @@ class AgentList(pn.viewable.Viewer):
 <example_output>
 [
     {
-        "name": "FinanceAgent",
+        "name": "BudgetAgent",
         "avatar": "💵",
-        "system_message": "负责预算分配和控制，确保总花费在预算范围内。"
+        "system_message": "负责预算分配和控制，确保总花费在预算范围内。",
+        "chinese_name":"预算专家"
     },
     {
         "name": "TrafficAgent",
         "avatar": "🚗",
-        "system_message": "优化交通路线和工具，避免晕车问题，并提供方便的交通方式。"
+        "system_message": "优化交通路线和工具，避免晕车问题，并提供方便的交通方式。",
+        "chinese_name":"交通专家"
     },
     {
         "name": "DiningAgent",
         "avatar": "🍽️",
-        "system_message": "安排每日餐饮，确保满足每个成员的饮食偏好。"
+        "system_message": "安排每日餐饮，确保满足每个成员的饮食偏好。",
+        "chinese_name":"餐饮专家"
     },
     {
         "name": "AccommodationAgent",
         "avatar": "🏨",
-        "system_message": "安排酒店选择，权衡每个人的偏好和预算。"
+        "system_message": "安排酒店选择，权衡每个人的偏好和预算。",
+        "chinese_name":"住宿专家"
     },
     {
         "name": "EntertainmentAgent",
         "avatar": "🎉",
-        "system_message": "根据成员兴趣安排参观活动，确保每个人都有满意的活动安排。"
-    },
-    {
-        "name": "ConferenceAgent",
-        "avatar": "📅",
-        "system_message": "协助安排会议相关的准备工作，确保会议的需求得到满足。"
+        "system_message": "根据成员兴趣安排参观活动，确保每个人都有满意的活动安排，并且将时间安排与会议议程避开。",
+        "chinese_name":"娱乐专家"
     }
 ]
-    </example_output>，注意name字段应该是英文大驼峰格式，avatar字段应该使用与这个Agent相关的emoji'''
+    </example_output>
+    
+    注意：
+    - name字段应该是英文大驼峰格式，avatar字段应该使用与这个Agent相关的emoji，chinese_name字段应该是中文名
+    - 你需要根据任务要求决定Agent个数，最多不超过4个Agent'''
     }])
         # 使用正则表达式提取 JSON 内容
+
         json_pattern = re.compile(r'```json\n(.*?)```', re.DOTALL)
         json_match = json_pattern.search(raw_agent_list)
         print(raw_agent_list)
@@ -82,7 +87,7 @@ class AgentList(pn.viewable.Viewer):
     def update_agents_list(self):
         self._layout.clear()
         for idx, agent in enumerate(self.agents):
-            agent_info = f'## {agent["avatar"]} {agent["name"]}\n'
+            agent_info = f'## {agent["avatar"]} {agent["chinese_name"]}\n'
             agent_info += agent["system_message"] + "\n\n---\n\n"
             update_button = pn.widgets.Button(name="Update")
             update_button.on_click(lambda event, idx=idx: self.open_update_popup(idx))
