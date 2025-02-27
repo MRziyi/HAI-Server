@@ -67,17 +67,8 @@ class AgentList(pn.viewable.Viewer):
     - name字段应该是英文大驼峰格式，avatar字段应该使用与这个Agent相关的emoji，chinese_name字段应该是中文名
     - 你需要根据任务要求决定Agent个数，最多不超过4个Agent'''
     }])
-        # 使用正则表达式提取 JSON 内容
-
-        json_pattern = re.compile(r'```json\n(.*?)```', re.DOTALL)
-        json_match = json_pattern.search(raw_agent_list)
-        print(raw_agent_list)
-        if json_match:
-            json_content = json_match.group(1)
-        else:
-            json_content = raw_agent_list
         try:
-            self.agents = json.loads(json_content)
+            self.agents = json.loads(raw_agent_list)
         except json.JSONDecodeError as e:
             self._layout.clear()
             self._layout = pn.Column(f"解析失败：\n原始输出：\n{raw_agent_list}\n错误：{e}")

@@ -1,6 +1,5 @@
 fastapi==0.115.6
 panel==1.4.4
 param==2.2.0
-pyautogen==0.3.0
 python-dotenv==1.0.1
 uvicorn==0.34.0

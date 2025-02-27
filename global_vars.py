@@ -1,7 +1,13 @@
 from dotenv import load_dotenv
 import os
 import panel as pn
-import autogen
+from autogen_agentchat.agents import AssistantAgent
+from autogen_ext.models.openai import OpenAIChatCompletionClient
+from autogen_ext.models.cache import ChatCompletionCache, CHAT_CACHE_VALUE_TYPE
+from autogen_ext.cache_store.diskcache import DiskCacheStore
+from diskcache import Cache
+from pydantic import BaseModel
+
 
 load_dotenv()  # 加载 .env 文件中的所有环境变量
 
@@ -18,45 +24,60 @@ execute_core=None
 req_ans_agent_name=''
 
 
+cache_store = DiskCacheStore[CHAT_CACHE_VALUE_TYPE](Cache('cache/'))
 
-llm_config={"config_list": [
-            {
-                'model': 'gpt-4o-2024-08-06',
-                "api_key": os.environ["OPENAI_API_KEY"],
-                # "base_url":"https://azureport.eastus.cloudapp.azure.com "
-            }
-            ], 
-            "temperature":0, 
-            "timeout":3000,
-            "seed": 53}
+# The response format for the agent as a Pydantic base model.
+class AgentResponse(BaseModel):
+    answer: str
+    target: str
 
-global_assistant= autogen.AssistantAgent(
+class ProcessManagerResponse(BaseModel):
+    answer: str
+    current_step: int
+    target: str
+
+process_manager_model = OpenAIChatCompletionClient(
+    model="gpt-4o",
+    response_format=ProcessManagerResponse,
+    api_key=os.environ["OPENAI_API_KEY"],)
+
+cached_process_manager_model = ChatCompletionCache(process_manager_model, cache_store)
+
+agent_model = OpenAIChatCompletionClient(
+    model="gpt-4o",
+    response_format=AgentResponse,
+    api_key=os.environ["OPENAI_API_KEY"],)
+
+cached_agent_model = ChatCompletionCache(agent_model, cache_store)
+
+advanced_model = OpenAIChatCompletionClient(
+    model="gpt-4o",
+    api_key=os.environ["OPENAI_API_KEY"],)
+
+cached_advanced_model = ChatCompletionCache(advanced_model, cache_store)
+
+# advanced_model = OpenAIChatCompletionClient(
+#     model="deepseek-v3",
+#     api_key=os.getenv("DASHSCOPE_API_KEY"),  
+#     base_url="https://dashscope.aliyuncs.com/compatible-mode/v1")
+
+
+global_assistant= AssistantAgent(
             name='Assistant',
-            llm_config=llm_config,
-            human_input_mode="NEVER",
-            system_message='你是Assistant，需要根据用户的要求，参考给出的例子给出json格式的输出',
+            system_message='You are the Assistant. Please refer to the given examples, fulfill the user\'s request, and return the result in JSON format',
+            model_client=advanced_model
         )
-smaller_model_config={"config_list": [
-            {
-                'model': 'gpt-4o-mini',
-                "api_key": os.environ["OPENAI_API_KEY"],
-                # "base_url":"https://azureport.eastus.cloudapp.azure.com "
-            }
-            ], 
-            "temperature":0, 
-            "timeout":3000,
-            "seed": 53}
 
-global_formatter= autogen.AssistantAgent(
+
+smaller_model = OpenAIChatCompletionClient(
+    model="gpt-4o-mini",
+    api_key=os.environ["OPENAI_API_KEY"],)
+
+
+cached_smaller_model = ChatCompletionCache(smaller_model, cache_store)
+
+global_formatter= AssistantAgent(
             name='Formatter',
-            llm_config=llm_config,
-            human_input_mode="NEVER",
-            system_message='''你是Formatter，需要将输入的内容，按照用户要求给出json格式的输出''',
-        )
-
-speaker_selector= autogen.AssistantAgent(
-            name='SpeakerSelector',
-            llm_config=smaller_model_config,
-            human_input_mode="NEVER",
-            system_message='''You are in a role play game. The roles in <roles_info> are available. Read the message in <message>. Then select the next role from <role_list> to play. Only return the role name (pure string).''',
+            system_message='You are the Formatter. Please refer to the given examples and convert the input into a JSON formatted output.',
+            model_client=cached_smaller_model
         )

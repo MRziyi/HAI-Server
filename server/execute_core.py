@@ -1,15 +1,18 @@
 import asyncio
 import json
-import re
-from fastapi import WebSocket
-import panel as pn
-import param
-import autogen
-import uvicorn
+from typing import Optional
 import global_vars
-from server.components.agents import MyConversableAgent, custom_speaker_selection_func, print_message_callback
+from server.components.utilities import VAgent, get_user_input, print_message_callback, selector_func
 from server.components.websocket_manager import WebSocketManager
 
+from autogen_agentchat.conditions import  TextMentionTermination
+from autogen_agentchat.teams import SelectorGroupChat
+from autogen_agentchat.base import TaskResult
+
+from autogen_agentchat.agents import UserProxyAgent
+from autogen_agentchat.messages import TextMessage
+from autogen_agentchat.agents import BaseChatAgent
+from autogen_agentchat.agents import AssistantAgent
 
 class ExecuteCore():
 
@@ -38,112 +41,70 @@ class ExecuteCore():
         self.task_name=task_name
         self.task_req=task_req
 
-    def init_agent_list(self) -> list[autogen.Agent]:
+    def init_agent_list(self) -> list[BaseChatAgent]:
         agent_list=[]
+        # Generate Introductions for each agent
+        agents_intro="User: Human User, Administrator\n"
+        for agent_info in self.agents:
+            agents_intro+=f"{agent_info['name']}: {agent_info['system_message']}\n"
 
         for agent_info in self.agents:
-            if(agent_info['name']=="Critic"):
-                agent =  autogen.AssistantAgent(
-                name="Critic",
-                description="你是Critic，需要再次检查其他Agent给出的任务计划、任务结果，并提出反馈",
-                system_message="""你是Critic，需要再次检查其他Agent给出的任务计划、任务结果，并提出反馈
-            重点：
-            - 你的职责只是检查其他Agent给出的结果提出反馈，而不是帮他们修改内容
-            - 为了方便用户阅读，你的输出**必须**严格按照下面列出的“输出格式”
-                - 你的输出应该是**一个**json格式的，应该包括如下例子中的参数：
-                {
-                    "chat":"较短的反馈，或对用户的提问"
-                }
-                - 你**只能**使用chat参数，前者用于较短内容，后者只用于较长的内容，你**禁止**自己编撰其他参数
-                - 你**只能**输出一个json
-            - 当你想向用户提问、或希望获取更多信息、或获得确认时，你需要提及关键词“Admin”
-            - 当你想与其他Agent交流/委托任务/寻求意见等时，你需要提及它的名字
-                """,
-                llm_config=global_vars.llm_config,
-                human_input_mode="NEVER",
-            )
-            elif(agent_info['name']=="ProcessManager"):
-                agent = autogen.AssistantAgent(
-                name="ProcessManager",
-                description="你是ProcessManager，负责管理任务执行进度，为Agent分配任务，或通过Admin向用户提问",
-                system_message=f'你是ProcessManager，负责管理任务执行进度，为Agent分配任务，或通过Admin向用户提问 \n任务步骤：{self.steps}'+
-    """
-                重点：
-                - 当你想向用户提问，或者希望获取更多信息时，你需要提及关键词“Admin”
-                - 当你想与其他Agent交流/委托任务/寻求意见等时，你需要提及它的名字
-                - 当你需要进行总结类任务时，你需要委托给其他Agent进行
-                - 你**必须**频繁地通过Admin与用户交互
-                - 你被**禁止**进行下一个任务，在一个任务结束后，你**必须**向用户提问，直到**批准**才可以进行下一步
-                - 你的职责是管理任务执行进度、为Agent分配任务，你被**禁止**自己执行任务
+            if(agent_info['name']=="ProcessManager"):
+                agent = VAgent(
+                    name="ProcessManager",
+                    model_client=global_vars.cached_process_manager_model,
+                    description="Manages task progress, assigns tasks to Agents, coordinating efforts, and communicates with users.",
+                    system_message=f'''You are ProcessManager, responsible for managing task execution progress, assigning tasks to Agents, coordinating efforts, and communicating with users.
+You need to:
+- Assign tasks, guide progress, and coordinate with team members and the human user based on the team member descriptions in the `<teamMember>` tag.
+- Use the task steps provided in the `<steps>` tag to determine the current task progress:
 
-                - 为了方便用户阅读，你的输出**必须**严格按照下面列出的“输出格式”
-                    输出格式：
-                    - 你**只能**使用chat与current_step参数，你**禁止**自己编撰其他参数
-                    {
-                        "chat":"较短的自己的想法、或是下一步的打算"
-                        "current_step":1 (当前进行的任务编号)
-                    }
-                    - 你**只能**输出一个json
-                    - 你**必须**根据聊天记录判断当前任务进度执行到了哪一步，并通过"current_step"进行表示
-                    - 在调整"current_step"时，你必须寻求Admin的意见，未经允许的修改将造成严重后果
-    """,
-                llm_config=global_vars.llm_config,
-                human_input_mode="NEVER",
-            )
+<steps>
+{self.steps}
+</steps>
+
+<teamMember>
+{agents_intro}
+</teamMember>
+
+Important:
+- You are **forbidden** to proceed to the next step on your own. After completing one step, you **must** ask the user for approval before proceeding to the next step.
+- Your responsibility is to manage task execution progress and assign tasks to Agents. You are **forbidden** from executing tasks yourself.
+
+Output Format:
+- In the `target` field, specify the team member you want to interact with (e.g., if you need to ask the user or gather more information, specify `User`; if you want to communicate with another Agent, delegate tasks, or seek advice, specify the Agent's name).
+- In the `answer` field, provide the content you want to communicate with the target team member.
+- In the `current_step` field, determine and specify the current task step based on the context.
+Follow the JSON format.''',
+                    )
             else:
-                agent=autogen.AssistantAgent(
+                agent = VAgent(
                     name=agent_info['name'],
-                    description=f"你是{agent_info['name']}，{agent_info['system_message']}",
-                    system_message=f"你是{agent_info['name']}，{agent_info['system_message']}"+
-        """ 重点：
-        - 请使用中文。
-        - 当你想向用户提问、或希望获取更多信息、或获得确认时，你需要提及关键词“Admin”
-        - 当你想与其他Agent交流/委托任务/寻求意见等时，你需要提及它的名字
-        - 当需要调整进度时（比如当前任务已经完成时），请与ProcessManager沟通
-        - 你被**禁止**一次性完成计划，确保在进行计划之前获得足够详细的信息，进行计划时应与用户逐步讨论进行。
-        - 规划过程中面对多个可选项时，你不能自己决定，应该询问用户的意见。
-        - 在与用户讨论方案时，你应该提出**具有启发性**的细节问题，例如：对解决问题需要补充的细节信息、用户可能忽略的需求等。
-        - 你需要积极地给用户进行大量推荐，使用具体真实的信息，不可以进行编撰""",
-                    llm_config=global_vars.llm_config,
-                    human_input_mode="NEVER",
-                )
-            agent.register_reply(
-                [autogen.Agent, None],
-                reply_func=print_message_callback, 
-                config={"callback": None},
-            )
+                    model_client=global_vars.cached_agent_model,
+                    description=f"{agent_info['system_message']}",
+                    system_message=f"""You are {agent_info['name']}, {agent_info['system_message']}.
+Important:
+- You are **forbidden** from completing the entire plan at once. You must first gather enough background information or user preferences and discuss the plan step-by-step with the user.
+- Since the user has no experience with the task, you need to ask **inspiring** questions to uncover implicit constraints or user needs. These questions should help the user explore and complete the task in a detailed and comprehensive way, such as:
+  - Additional information needed to solve the problem
+  - Potential user needs or overlooked requirements
+- When there are multiple options during the planning process, you cannot make the decision on your own. You should provide sufficient background information and ask the user for their input.
+- You need to actively recommend options to the user, using specific and real information. Do not fabricate or create content.
 
+Output Format:
+- In the `target` field, based on the team member descriptions in the `<teamMember>` tag, specify the team member you want to interact with (e.g., if you need to ask the user or gather more information, specify `User`; if you want to communicate with another Agent, delegate tasks, or seek advice, specify the Agent's name; when adjusting progress (e.g., after a task is completed), communicate with ProcessManager).
+- In the `answer` field, provide the content you want to communicate with the target team member.
+
+<teamMember>
+{agents_intro}
+</teamMember>""",)
             agent_list.append(agent)
+
+        agent_list.append(UserProxyAgent("User",
+            input_func=get_user_input))
+        
         return agent_list
     
-    async def init_chat(self):
-
-        user_proxy=MyConversableAgent(
-            name="Admin",
-            # is_termination_msg=lambda x: x.get("content", "").rstrip().endswith("exit"),
-            system_message='''你是人类Admin''',
-            code_execution_config=False,
-            human_input_mode="ALWAYS",
-        )
-        user_proxy.register_reply(
-            [autogen.Agent, None],
-            reply_func=print_message_callback, 
-            config={"callback": None},
-        )
-        agent_list = self.init_agent_list()
-        agent_list.append(user_proxy)
-        global_vars.groupchat = autogen.GroupChat(
-            agents=agent_list, 
-            speaker_selection_method=custom_speaker_selection_func,
-            messages=[])
-        global_vars.groupchat_manager = autogen.GroupChatManager(groupchat=global_vars.groupchat,system_message='''Group chat manager. 
-重点：
-- 你被**禁止**向不同的Agent询问相同的信息
-- 当你想向用户提问，或者希望获取更多信息时，请通过Admin向用户提问
-''', llm_config=global_vars.llm_config)
-
-        await user_proxy.a_initiate_chat(global_vars.groupchat_manager, message=f"@ProcessManager@, {self.task_name}\n{self.task_req}")
-
     def __init__(self, ws_manager:WebSocketManager,config_url):
         self.init_config(config_url)
         self.ws_manager=ws_manager
@@ -155,6 +116,15 @@ class ExecuteCore():
                         "agent_list":self.agents,
                         "step_list":self.steps
                     })
+        
+        termination = TextMentionTermination("TERMINATE")
+        agent_list = self.init_agent_list()
+        self.team = SelectorGroupChat(agent_list,
+            model_client=global_vars.smaller_model,
+            termination_condition=termination,
+            allow_repeated_speaker=True,
+            selector_func=selector_func,
+        )
 
     def send_to_client(self, type, data):
         asyncio.create_task(self.ws_manager.send_to_client_queue.put(json.dumps(
@@ -166,5 +136,21 @@ class ExecuteCore():
         
 
         
-    def start_chat(self):
-        global_vars.chat_task = asyncio.create_task(self.init_chat())
+    def start_chat(self,target='',answer=''):
+        if target=='' and answer=='':
+            global_vars.chat_task = asyncio.create_task(self.run_team_stream('ProcessManager',f"{self.task_name}: {self.task_req}"))
+        else:
+            global_vars.chat_task = asyncio.create_task(self.run_team_stream(target,answer))
+
+
+
+    async def run_team_stream(self,target,answer) -> None:
+        async for message in self.team.run_stream(task=TextMessage(source='User',content=json.dumps(
+                    {
+                        "target": target,
+                        "answer": answer
+                    },ensure_ascii=False,indent=4))):
+            if isinstance(message, TaskResult):
+                print("Stop Reason:", message.stop_reason)
+            else:
+                print(message)

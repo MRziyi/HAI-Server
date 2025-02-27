@@ -3,6 +3,8 @@ import json
 from fastapi import FastAPI, WebSocket
 import uvicorn
 
+from autogen_agentchat.messages import TextMessage
+from autogen_core import CancellationToken
 import global_vars
 from server.components.websocket_manager import WebSocketManager
 from server.execute_core import ExecuteCore
@@ -10,13 +12,10 @@ from server.execute_core import ExecuteCore
 ws_app = FastAPI()
 
 
-
 async def send_to_client_listener(ws_manager: WebSocketManager):
     while True:
         msg_to_send = await ws_manager.send_to_client_queue.get()
         await ws_manager.websocket.send_text(msg_to_send)
-        # print("-----SEND TO WS------\n"+msg_to_send)
-        await asyncio.sleep(0.05)
 
 async def recv_from_client_listener(ws_manager: WebSocketManager):
     while True:
@@ -39,25 +38,40 @@ async def recv_from_client_listener(ws_manager: WebSocketManager):
             ws_manager.log("USER: @"+target_agent_name+", "+text)
             if text == '':
                 return
-            if global_vars.input_future and not global_vars.input_future.done() and global_vars.req_ans_agent_name == target_agent_name:
-                global_vars.input_future.set_result(text)
-            else:
+            if global_vars.input_future and not global_vars.input_future.done():#用户的提问相应机制
+                global_vars.input_future.set_result('''{
+    "target": "'''+target_agent_name+'''",
+    "answer": "'''+text+'''"
+}''')
+            else:#用户的主动打断机制
                 global_vars.chat_task.cancel()  # 取消任务
-                user_proxy = global_vars.groupchat.agent_by_name("Admin")
-                global_vars.chat_task = asyncio.create_task(user_proxy.a_initiate_chat(
-                    recipient=global_vars.groupchat_manager,
-                    message="@" + target_agent_name + "@, " + text,
-                    clear_history=False
-                ))
-        elif type == "user/confirm_solution":
-            text = json_data.get("solution")
-            ws_manager.log("CONFIRM SOLUTION: "+text)
+                global_vars.execute_core.start_chat(target_agent_name,text)
+                
         elif type=="process/start_plan":
             if(global_vars.chat_task!=None):
                 global_vars.chat_task.cancel()
             ws_manager.log("CHAT STARTED")
             global_vars.execute_core.start_chat()
-        await asyncio.sleep(0.05)
+        elif type=="user/confirm_solution":
+            solution = json_data.get("solution")
+            original_step = json_data.get("original_step")
+            ws_manager.log("CONFIRM SOLUTION: "+solution)
+            cancellation_token = CancellationToken()
+            summary = await global_vars.global_formatter.on_messages([
+                TextMessage(source='user',content=f'''Summarize the content within the <text> tag, keeping key points and presenting the result clearly and concisely.
+        <text>
+        {solution}
+        </text>''')],
+        
+        cancellation_token=cancellation_token
+            )
+
+            global_vars.execute_core.send_to_client("solution/summary",
+                    {
+                        "original_step":original_step,
+                        "solution_summary":summary
+                    })
+
 
 @ws_app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
