@@ -68,6 +68,7 @@ You need to:
 </teamMember>
 
 Important:
+- 使用中文
 - You are **forbidden** to proceed to the next step on your own. After completing one step, you **must** ask the user for approval before proceeding to the next step.
 - Your responsibility is to manage task execution progress and assign tasks to Agents. You are **forbidden** from executing tasks yourself.
 
@@ -84,6 +85,7 @@ Follow the JSON format.''',
                     description=f"{agent_info['system_message']}",
                     system_message=f"""You are {agent_info['name']}, {agent_info['system_message']}.
 Important:
+- 使用中文
 - You are **forbidden** from completing the entire plan at once. You must first gather enough background information or user preferences and discuss the plan step-by-step with the user.
 - Since the user has no experience with the task, you need to ask **inspiring** questions to uncover implicit constraints or user needs. These questions should help the user explore and complete the task in a detailed and comprehensive way, such as:
   - Additional information needed to solve the problem
@@ -91,13 +93,16 @@ Important:
 - When there are multiple options during the planning process, you cannot make the decision on your own. You should provide sufficient background information and ask the user for their input.
 - You need to actively recommend options to the user, using specific and real information. Do not fabricate or create content.
 
-Output Format:
-- In the `target` field, based on the team member descriptions in the `<teamMember>` tag, specify the team member you want to interact with (e.g., if you need to ask the user or gather more information, specify `User`; if you want to communicate with another Agent, delegate tasks, or seek advice, specify the Agent's name; when adjusting progress (e.g., after a task is completed), communicate with ProcessManager).
+Output Format:"""+"""
+- In the `target` field, based on the team member descriptions in the `<teamMember>` tag, specify the team member (or yourself again) you want to interact with (e.g., if you need to ask the user or gather more information, specify `User`; if you want to communicate with another Agent, delegate tasks, or seek advice, specify the Agent's name; when adjusting progress (e.g., after a task is completed), communicate with ProcessManager).
 - In the `answer` field, provide the content you want to communicate with the target team member.
 
 <teamMember>
 {agents_intro}
-</teamMember>""",)
+</teamMember>"""if not self.is_single else"""
+- In the `target` field, just fillin "User"
+- In the `answer` field, provide the content you want to communicate with User.
+""",)
             agent_list.append(agent)
 
         agent_list.append(UserProxyAgent("User",
@@ -105,9 +110,13 @@ Output Format:
         
         return agent_list
     
-    def __init__(self, ws_manager:WebSocketManager,config_url):
-        self.init_config(config_url)
+    def __init__(self, ws_manager:WebSocketManager,is_single:bool):
+        self.is_single=is_single
         self.ws_manager=ws_manager
+        if is_single:
+            self.init_config('config/config_single.txt')
+        else:   
+            self.init_config('config/config_multi.txt')
 
         self.send_to_client("config/info",
                     {
@@ -138,7 +147,7 @@ Output Format:
         
     def start_chat(self,target='',answer=''):
         if target=='' and answer=='':
-            global_vars.chat_task = asyncio.create_task(self.run_team_stream('ProcessManager',f"{self.task_name}: {self.task_req}"))
+            global_vars.chat_task = asyncio.create_task(self.run_team_stream('ProcessManager',f"{self.task_name}: {self.task_req}"))if not self.is_single else asyncio.create_task(self.run_team_stream(self.agents[0]['name'],f"{self.task_name}: {self.task_req}"))
         else:
             global_vars.chat_task = asyncio.create_task(self.run_team_stream(target,answer))
 
@@ -152,5 +161,5 @@ Output Format:
                     },ensure_ascii=False,indent=4))):
             if isinstance(message, TaskResult):
                 print("Stop Reason:", message.stop_reason)
-            else:
-                print(message)
+            # else:
+            #     print(message)

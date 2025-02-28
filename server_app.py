@@ -1,5 +1,7 @@
+import argparse
 import asyncio
 import json
+import sys
 from fastapi import FastAPI, WebSocket
 import uvicorn
 
@@ -11,6 +13,11 @@ from server.execute_core import ExecuteCore
 
 ws_app = FastAPI()
 
+parser = argparse.ArgumentParser(description="WebSocket server options")
+parser.add_argument('--single', action='store_true', help='Run in single mode')
+
+# Parse the arguments
+args = parser.parse_args()
 
 async def send_to_client_listener(ws_manager: WebSocketManager):
     while True:
@@ -81,7 +88,7 @@ async def websocket_endpoint(websocket: WebSocket):
         send_task = asyncio.create_task(send_to_client_listener(ws_manager))
         recv_task = asyncio.create_task(recv_from_client_listener(ws_manager))
         
-        global_vars.execute_core = ExecuteCore(ws_manager=ws_manager,config_url='config/config.txt')
+        global_vars.execute_core = ExecuteCore(ws_manager=ws_manager,is_single=args.single)
 
         # Wait for both listeners and chat to complete
         await asyncio.gather(send_task, recv_task)
@@ -91,4 +98,4 @@ async def websocket_endpoint(websocket: WebSocket):
         await ws_manager.disconnect()
 
 if __name__ == "__main__":
-    uvicorn.run(ws_app, host="0.0.0.0", port=8000)
+    uvicorn.run(ws_app, host="0.0.0.0", port=8001)

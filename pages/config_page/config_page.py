@@ -71,7 +71,7 @@ class ConfigPage(Viewer):
     def steps_confirm(self,step_list_content):
         agent_list,step_list=step_list_content.get_lists()
         try:
-            with open('config/config.txt', 'w') as f:  # 使用 'w' 模式写入文件
+            with open('config/config_multi.txt', 'w') as f:  # 使用 'w' 模式写入文件
                 f.write(json.dumps(
                     {
                         "task_name":self.task_name,

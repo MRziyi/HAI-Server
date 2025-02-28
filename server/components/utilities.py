@@ -21,23 +21,8 @@ class VAgent(AssistantAgent):
             if isinstance(msg, Response):
                 chat_msg = msg.chat_message
                 if chat_msg.source != 'User':  # 确保是当前Agent生成的消息
-                    print(f"----CATCHED---- {chat_msg.source}: {chat_msg.content}")
                     print_message_callback(chat_msg.source,chat_msg.content)
 
-# class VAgent(AssistantAgent):
-    
-#     async def on_messages_stream(
-#         self, messages: Sequence[ChatMessage], cancellation_token: CancellationToken
-#     ) -> AsyncGenerator[AgentEvent | ChatMessage | Response, None]:
-#         # 保持原有功能
-#         async for msg in super().on_messages_stream(messages, cancellation_token):
-#             # 额外功能：调用 print_message_callback
-#             if messages:  # 确保 messages 不为空
-#                 print("----CATCHED----print_message_callback: "+messages[-1].source+'\n'+messages[-1].content+'---------')
-#                 if(messages[-1].source!='User'):
-#                     print_message_callback(self.name, messages[-1].source, messages[-1].content)
-            
-#             yield msg  # 保持原来 yield 的消息
 
 
 def print_message_callback(sender_name, massage):
@@ -64,8 +49,9 @@ def print_message_callback(sender_name, massage):
     if(len(massage_content) < 200):
         print_chat_message(recipient_name,sender_name, massage_content)
     else:
-        print("-----format_and_print_message Called from: "+sender_name)
+        print("[Formatting] Called from: "+sender_name)
         asyncio.create_task(format_and_print_message(recipient_name, sender_name, massage))
+    print("-------------\n")
     return False, None
 
 
@@ -78,9 +64,9 @@ def print_chat_message(recipient_name,sender_name, message):
                     "chat":f'{message}'
                 })
     
-    print("-------Unformatted Chat Content--------")
-    print(f'{recipient_name}, {message}')
-    print("-------------")
+    print("[ChatMsg] Called from: "+sender_name)
+    print(f'{message}')
+    print("-------------\n")
 
 def selector_func(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
     json_pattern = re.compile(r'```json\n(.*?)```', re.DOTALL)
@@ -100,11 +86,11 @@ def selector_func(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
     if target_name:
         if target_name =="User":
             global_vars.req_ans_agent_name=messages[-1].source
-        print("Selector Choose:"+ target_name)
+        print("[Selector] Choose:"+ target_name)
         return target_name
     else:
-        print("Target Agent Parse Error:"+json_content)
-        return "ProcessManager"
+        print("[Selector] Parse Error:"+json_content)
+        return None
 
 
     # User input function used by the team.
@@ -136,11 +122,14 @@ async def format_and_print_message(recipient_name, sender_name, massage):
     cancellation_token = CancellationToken()
     formatted_reply = await global_vars.global_formatter.on_messages([
         TextMessage(source='user',content=f'''Determine if the content in the <text> tag fits typical short conversational exchanges:
+
 <text>
 {massage}
 </text>'''+'''
 
-1. If the content is a short conversation (less then 4 sentence), output according to the structure in <colloquialInputExample>:
+**Note**: The content inside the <text> tag represents the agent's communication with the user or another agent Do not interpret it as the agent's personal message or behavior.
+
+1. If the content is a short conversation (less than 4 sentences), output according to the structure in <colloquialInputExample>:
 
 <colloquialInputExample>
 {
@@ -165,18 +154,24 @@ The formatted output should follow the structure in <formalInputExample>:
 </formalInputExample>
 
 Note:
+- 使用中文
 - Only use the `chat` and `content` fields; do not include other fields.
 - The `content` field should be the original content of the agent's full output after removing the `chat` portion, without adding or omitting any information.
 
 The output should follow the above format and be returned as JSON.''')],
 cancellation_token=cancellation_token
     )
-
+    json_pattern = re.compile(r'```json\n(.*?)```', re.DOTALL)
+    json_match = json_pattern.search(formatted_reply.chat_message.content)
+    if json_match:
+        json_content = json_match.group(1)
+    else:
+        json_content = formatted_reply.chat_message.content
     try:
-        data = json.loads(formatted_reply.chat_message.content)
+        data = json.loads(json_content)
     except json.JSONDecodeError as e:
         print("----------Failed to decode JSON:--------\n", e)
-        print(f"Content: {formatted_reply}\n-----------------\n")
+        print(f"Content: {formatted_reply.chat_message.content}\n-----------------\n")
         data = {}
 
     chat_content = data.get('chat', None)
@@ -185,9 +180,9 @@ cancellation_token=cancellation_token
         
     md_content = data.get('content', None)
     if md_content:
-        print("-------Formatted MD Content--------")
+        print("[Formatted] Called from: "+sender_name)
         print(md_content)
-        print("-------------")
+        print("-------------\n")
         
         global_vars.execute_core.send_to_client("solution/panel/update",
                 {

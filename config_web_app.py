@@ -8,7 +8,6 @@ pn.extension()
 
 # 创建 Panel 服务器
 def init_web_page():
-    print(sys.argv)
     if len(sys.argv) < 3:
         print("Usage: python config_web_app.py <task_name>")
         sys.exit
@@ -23,7 +22,7 @@ def init_web_page():
     task_description = task_def.get("taskDescription", "")
     task_options = task_def.get("taskOptions", [])
 
-    task_req=f'{task_name}: {task_description}\n\n 我选择：{task_options[index1].get("optionInfo")}\n 我的朋友选择：{task_options[index2].get("optionInfo")}'
+    task_req=f'{task_description}\n\n 我选择：{task_options[index1].get("optionInfo")}\n 我的朋友选择：{task_options[index2].get("optionInfo")}'
     
     config = ConfigPage(task_name=task_name,task_req=task_req)
     global_vars.app_layout[:] = [config]
