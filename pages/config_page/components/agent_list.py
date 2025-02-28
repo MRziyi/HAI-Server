@@ -1,6 +1,8 @@
 import asyncio
 import json
 import re
+from autogen_agentchat.messages import TextMessage
+from autogen_core import CancellationToken
 import panel as pn
 import param
 
@@ -20,58 +22,55 @@ class AgentList(pn.viewable.Viewer):
         asyncio.create_task(self.generate_agent_list())
 
     async def generate_agent_list(self):
-        raw_agent_list = await global_vars.global_assistant.a_generate_reply(messages=[{
-        "role": "user",
-        "name": "Admin",
-        "content": f'''你需要为<task>标签内的任务推荐一个合适的多Agent阵容，
-参考<example_task>标签的样例任务，以给出<example_output>标签内样例输出的格式进行回复，只需要回复json格式即可
-<task>{self.task_name}: {self.task_req}</task>'''+
-'''
-<example_task>行程规划：我需要带领4人的团队前往东南大学参加学术会议，同时在南京知名景点参观。你需要考虑时间安排、交通、资金等全面的因素，并且每个团队成员有着不同的喜好和倾向。请权衡内容，制定平衡合理的行程安排</example_task>
+        cancellation_token = CancellationToken()
+        raw_agent_list = await global_vars.global_assistant.on_messages([
+            TextMessage(source='user',content=f'''Recommend a suitable multi-Agent team for the task in the <task> tag. Refer to the example task in <example_task> and respond in the format provided in <example_output>, with only a JSON output.
+<task>{self.task_name}: {self.task_req}</task>'''+'''
+<example_task>Travel itinerary: Lead a team of 4 to Southeast University for an academic conference and visit famous landmarks in Nanjing. Consider time management, transportation, budget, and the preferences of each team member. Please provide a balanced and reasonable itinerary.</example_task>
 <example_output>
 [
     {
         "name": "BudgetAgent",
         "avatar": "💵",
-        "system_message": "负责预算分配和控制，确保总花费在预算范围内。",
-        "chinese_name":"预算专家"
+        "system_message": "负责预算分配，确保总花费在预算范围内。",
+        "chinese_name": "预算专家"
     },
     {
         "name": "TrafficAgent",
         "avatar": "🚗",
-        "system_message": "优化交通路线和工具，避免晕车问题，并提供方便的交通方式。",
-        "chinese_name":"交通专家"
+        "system_message": "优化交通路线，避免晕车问题，提供合适的交通工具。",
+        "chinese_name": "交通专家"
     },
     {
         "name": "DiningAgent",
         "avatar": "🍽️",
-        "system_message": "安排每日餐饮，确保满足每个成员的饮食偏好。",
-        "chinese_name":"餐饮专家"
+        "system_message": "安排餐饮，满足成员饮食偏好。",
+        "chinese_name": "餐饮专家"
     },
     {
         "name": "AccommodationAgent",
         "avatar": "🏨",
-        "system_message": "安排酒店选择，权衡每个人的偏好和预算。",
-        "chinese_name":"住宿专家"
-    },
-    {
-        "name": "EntertainmentAgent",
-        "avatar": "🎉",
-        "system_message": "根据成员兴趣安排参观活动，确保每个人都有满意的活动安排，并且将时间安排与会议议程避开。",
-        "chinese_name":"娱乐专家"
+        "system_message": "选择酒店，平衡预算和成员偏好。",
+        "chinese_name": "住宿专家"
     }
 ]
-    </example_output>
-    
-    注意：
-    - name字段应该是英文大驼峰格式，avatar字段应该使用与这个Agent相关的emoji，chinese_name字段应该是中文名
-    - 你需要根据任务要求决定Agent个数，最多不超过4个Agent'''
-    }])
+</example_output>
+
+Important:
+- name should be in camel case, avatar should use relevant emojis, system_message and chinese_name should be in Chinese.
+- Decide the number of agents based on task requirements, with a maximum of 4 agents.''')], cancellation_token=cancellation_token
+        )
+        json_pattern = re.compile(r'```json\n(.*?)```', re.DOTALL)
+        json_match = json_pattern.search(raw_agent_list.chat_message.content)
+        if json_match:
+            json_content = json_match.group(1)
+        else:
+            json_content = raw_agent_list.chat_message.content
         try:
-            self.agents = json.loads(raw_agent_list)
+            self.agents = json.loads(json_content)
         except json.JSONDecodeError as e:
             self._layout.clear()
-            self._layout = pn.Column(f"解析失败：\n原始输出：\n{raw_agent_list}\n错误：{e}")
+            self._layout = pn.Column(f"解析失败：\n原始输出：\n{raw_agent_list.chat_message.content}\n错误：{e}")
         self.update_agents_list()
 
 
@@ -115,7 +114,6 @@ class AgentList(pn.viewable.Viewer):
         global_vars.app.open_modal()
 
     def get_agents(self):
-        print(self.agents)
         return self.agents
         
     def open_add_popup(self, event):

@@ -19,10 +19,10 @@ class ConfigPage(Viewer):
         self.req_input = pn.widgets.TextAreaInput(
             name=self.task_name,
             auto_grow=True, 
-            max_rows=30, 
-            rows=6, 
+            max_rows=50, 
+            rows=20, 
             placeholder=f"任务「{self.task_name}」已知的详细信息/要求/约束",
-            sizing_mode='stretch_width',
+            sizing_mode='scale_width',
             value=self.task_req)
         confirm_button = pn.widgets.Button(name='确认', button_type='primary')
         confirm_button.on_click(self.req_confirm)
@@ -54,10 +54,10 @@ class ConfigPage(Viewer):
     
     def agents_confirm(self, agent_list_content):
         agent_list=agent_list_content.get_agents()
-        agent_list.insert(0,{"name": "ProcessManager", "avatar": "⏩️", "system_message": "负责管理任务执行进度，为Agent分配任务，或通过Admin向用户提问","chinese_name": "进度管理员"})
+        agent_list.insert(2,{"name": "ProcessManager", "avatar": "⏩️", "system_message": "负责管理任务执行进度，为Agent分配任务，或通过Admin向用户提问","chinese_name": "进度管理员"})
         confirmed_agents = f"## 任务「{self.task_name}」的Agents分配\n"
         for agent in agent_list:
-            confirmed_agents += f'## {agent["avatar"]} {agent["name"]}\n'
+            confirmed_agents += f'## {agent["avatar"]} {agent["chinese_name"]}\n'
             confirmed_agents += agent["system_message"] + "\n\n---\n\n"
         
         step_list_content = StepList(agents=agent_list,task_name=self.task_name,task_req=self.req_input.value)

@@ -64,8 +64,8 @@ cached_advanced_model = ChatCompletionCache(advanced_model, cache_store)
 
 global_assistant= AssistantAgent(
             name='Assistant',
-            system_message='You are the Assistant. Please refer to the given examples, fulfill the user\'s request, and return the result in JSON format',
-            model_client=advanced_model
+            system_message='You are the Assistant. Please refer to the given examples, fulfill the user\'s request and provide the output formatted according to the user’s requirements.',
+            model_client=cached_advanced_model
         )
 
 

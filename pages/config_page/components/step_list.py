@@ -1,6 +1,8 @@
 import asyncio
 import json
 import re
+from autogen_agentchat.messages import TextMessage
+from autogen_core import CancellationToken
 import panel as pn
 import param
 
@@ -22,45 +24,52 @@ class StepList(pn.viewable.Viewer):
         asyncio.create_task(self.generate_step_list())
 
     async def generate_step_list(self):
-        raw_step_list = await global_vars.global_assistant.a_generate_reply(messages=[{
-        "role": "user",
-        "name": "Admin",
-        "content": f'''你需要为<task>标签内的任务推荐一个合适的步骤，给各个步骤分配<agents>标签内的Agents，
-参考<example_task>标签的样例任务，以给出<example_output>标签内样例输出的格式进行回复，只需要回复json格式即可
+        cancellation_token = CancellationToken()
+        raw_step_list = await global_vars.global_assistant.on_messages([
+            TextMessage(source='user',content=f'''You need to recommend appropriate steps for the task described in the <task> tag and assign the agents from the <agents> tag to each step. Please refer to the example task in the <example_task> tag and respond using the format provided in the <example_output> tag. Only return the JSON format.
 <task>{self.task_name}: {self.task_req}</task>
-<agents>{self.agents}</agents>'''+
-'''
-<example_task>行程规划：我需要带领4人的团队前往东南大学参加学术会议，同时在南京知名景点参观。你需要考虑观光与学术会议的时间安排、餐饮、资金等全面的因素，并且每个团队成员有着不同的喜好和倾向。请权衡以下内容，制定平衡合理的观光计划、餐饮安排与预算计划。</example_task>
+<agents>{self.agents}</agents>'''+'''
+<example_task>Debate material preparation: I need to prepare materials for a debate, with the theme "Human nature is inherently evil", and prepare corresponding debate materials.</example_task>
+
 <example_output>
 [
     {
-        "name":"为不同成员分配景点",
-        "content":"由EntertainmentAgent根据用户的需求特点搜索并列出南京的景点，与Admin讨论给成员的景点分配，之后由Critic给出建议并改进"
+        "name": "Define key concepts",
+        "content": "DefinitionAgent will collect and organize relevant definitions to ensure clarity."
     },
     {
-        "name":"规划时间表",
-        "content":"由EntertainmentAgent根据Step1中的景点分配，参考会议时间安排进行，之后由Critic与Admin给出建议并改进"
+        "name": "Provide background information",
+        "content": "BackgroundAgent will provide background information, including history and current status, to help understand the premise of the debate."
     },
     {
-        "name":"规划餐饮安排",
-        "content":"由DiningAgent根据Step2中的时间安排，根据成员的喜好安排餐饮计划，之后由Critic与Admin给出建议并改进"
+        "name": "Collect key arguments",
+        "content": "ArgumentAgent will gather supporting arguments for the 'human nature is inherently evil' position, providing relevant facts, theories, and data."
     },
     {
-        "name":"列出预算表",
-        "content":"由FinanceAgent根据Step2与Step3中的景点选择与餐饮安排列出预算表，之后由Critic给出建议并改进"
+        "name": "Prepare rebuttal points",
+        "content": "RebuttalAgent will predict potential attacks from the opposing side and prepare rebuttal materials."
     },
     {
-        "name":"输出观光计划",
-        "content":"输出最后的结果，任务完成"
+        "name": "Integrate materials",
+        "content": "ProcessManager will integrate all collected materials to ensure logical coherence and completeness."
     }
 ]
-</example_output>'''
-    }])
+</example_output>
+
+Note: Ensure that the `name` and `content` fields are in Chinese.''')], cancellation_token=cancellation_token
+        )
+
+        json_pattern = re.compile(r'```json\n(.*?)```', re.DOTALL)
+        json_match = json_pattern.search(raw_step_list.chat_message.content)
+        if json_match:
+            json_content = json_match.group(1)
+        else:
+            json_content = raw_step_list.chat_message.content
         try:
-            self.steps = json.loads(raw_step_list)
+            self.steps = json.loads(json_content)
         except json.JSONDecodeError as e:
             self._layout.clear()
-            self._layout = pn.Column(f"解析失败：\n原始输出：\n{raw_step_list}\n错误：{e}")
+            self._layout = pn.Column(f"解析失败：\n原始输出：\n{raw_step_list.chat_message.content}\n错误：{e}")
         self.update_step_list()
 
     def get_lists(self):
