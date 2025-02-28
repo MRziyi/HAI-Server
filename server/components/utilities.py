@@ -5,6 +5,7 @@ from typing import Sequence, AsyncGenerator
 from autogen_agentchat.messages import TextMessage, ChatMessage, AgentEvent
 from autogen_agentchat.base import Response
 from autogen_agentchat.agents import AssistantAgent
+from autogen_core import CancellationToken
 
 import global_vars
 
@@ -60,7 +61,7 @@ def print_message_callback(sender_name, massage):
 
 
     print(f"Messages from: {sender_name} sent to: {recipient_name} | message: {massage_content}")
-    if(len(massage_content) < 100):
+    if(len(massage_content) < 200):
         print_chat_message(recipient_name,sender_name, massage_content)
     else:
         print("-----format_and_print_message Called from: "+sender_name)
@@ -139,7 +140,7 @@ async def format_and_print_message(recipient_name, sender_name, massage):
 {massage}
 </text>'''+'''
 
-1. If the content is a short conversation (less then 2 sentence), output according to the structure in <colloquialInputExample>:
+1. If the content is a short conversation (less then 4 sentence), output according to the structure in <colloquialInputExample>:
 
 <colloquialInputExample>
 {

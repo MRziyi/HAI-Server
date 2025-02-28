@@ -78,6 +78,6 @@ cached_smaller_model = ChatCompletionCache(smaller_model, cache_store)
 
 global_formatter= AssistantAgent(
             name='Formatter',
-            system_message='You are the Formatter. Please refer to the given examples and convert the input into a JSON formatted output.',
+            system_message='You are the Formatter. Please provide the output formatted according to the user’s requirements',
             model_client=cached_smaller_model
         )

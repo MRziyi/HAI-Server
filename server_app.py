@@ -32,10 +32,11 @@ async def recv_from_client_listener(ws_manager: WebSocketManager):
                 print("JSON Data: "+str(data))
         except Exception as e:
             print("raw_data decode ERROR: "+str(e))
+        
+        ws_manager.log(type,json.dumps(data,ensure_ascii=False))
         if type == "user/talk":
             text = json_data.get("content")
             target_agent_name = json_data.get("targetAgent")
-            ws_manager.log("USER: @"+target_agent_name+", "+text)
             if text == '':
                 return
             if global_vars.input_future and not global_vars.input_future.done():#用户的提问相应机制
@@ -50,15 +51,13 @@ async def recv_from_client_listener(ws_manager: WebSocketManager):
         elif type=="process/start_plan":
             if(global_vars.chat_task!=None):
                 global_vars.chat_task.cancel()
-            ws_manager.log("CHAT STARTED")
             global_vars.execute_core.start_chat()
         elif type=="user/confirm_solution":
             solution = json_data.get("solution")
             original_step = json_data.get("original_step")
-            ws_manager.log("CONFIRM SOLUTION: "+solution)
             cancellation_token = CancellationToken()
             summary = await global_vars.global_formatter.on_messages([
-                TextMessage(source='user',content=f'''Summarize the content within the <text> tag, keeping key points and presenting the result clearly and concisely.
+                TextMessage(source='user',content=f'''Summarize the content within the <text> tag, keeping key points and presenting the result clearly and concisely. Use MarkDown format.
         <text>
         {solution}
         </text>''')],
@@ -69,7 +68,7 @@ async def recv_from_client_listener(ws_manager: WebSocketManager):
             global_vars.execute_core.send_to_client("solution/summary",
                     {
                         "original_step":original_step,
-                        "solution_summary":summary
+                        "solution_summary":summary.chat_message.content
                     })
 
 

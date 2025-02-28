@@ -132,7 +132,7 @@ Output Format:
                 "type": type,
                 "data": data
             },ensure_ascii=False, indent=4)))
-        self.ws_manager.log(type+": "+str(data))
+        self.ws_manager.log(type,json.dumps(data,ensure_ascii=False))
         
 
         

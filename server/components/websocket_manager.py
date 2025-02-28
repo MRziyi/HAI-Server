@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime
-import os
 from fastapi import WebSocket
 import global_vars
 
@@ -11,7 +10,7 @@ class WebSocketManager:
         self.send_to_client_queue = asyncio.Queue()
         now = datetime.now()
         date_str = now.strftime("%m-%d@%H:%M")
-        self.file_path = f'history/{date_str}.txt'
+        self.file_path = f'history/{date_str}.tsv'
         # Append the log entry to the file
 
     async def connect(self):
@@ -26,12 +25,12 @@ class WebSocketManager:
         self.log("WS DISCONNECTED")
         print("WS Disconnected")
 
-    def log(self,text):
+    
+    def log(self,url, info=''):
         now = datetime.now()
         time_str = now.strftime("%H:%M:%S")
-        
         # Log entry
-        log_entry = f"{time_str}: {text}\n"
+        log_entry = f"\"{time_str}\"\t\"{url}\"\t\"{info}\"\n"
         
         # Append the log entry to the file
         with open(self.file_path, 'a') as file:
