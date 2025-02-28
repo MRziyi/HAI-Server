@@ -72,7 +72,7 @@ async def recv_from_client_listener(ws_manager: WebSocketManager):
         cancellation_token=cancellation_token
             )
 
-            global_vars.execute_core.send_to_client("solution/summary",
+            global_vars.execute_core.send_to_client("s olution/summary",
                     {
                         "original_step":original_step,
                         "solution_summary":summary.chat_message.content

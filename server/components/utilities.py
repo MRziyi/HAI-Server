@@ -14,18 +14,16 @@ class VAgent(AssistantAgent):
         self, messages: Sequence[ChatMessage], cancellation_token: CancellationToken
     ) -> AsyncGenerator[AgentEvent | ChatMessage | Response, None]:
         async for msg in super().on_messages_stream(messages, cancellation_token):
-            # 先保持原有消息流
-            yield msg
-            
             # 仅处理最终响应消息
             if isinstance(msg, Response):
                 chat_msg = msg.chat_message
                 if chat_msg.source != 'User':  # 确保是当前Agent生成的消息
-                    print_message_callback(chat_msg.source,chat_msg.content)
+                    await print_message_callback(chat_msg.source,chat_msg.content)
+            yield msg
 
 
 
-def print_message_callback(sender_name, massage):
+async def print_message_callback(sender_name, massage):
     try:
         data = json.loads(massage)
     except json.JSONDecodeError as e:
@@ -50,7 +48,7 @@ def print_message_callback(sender_name, massage):
         print_chat_message(recipient_name,sender_name, massage_content)
     else:
         print("[Formatting] Called from: "+sender_name)
-        asyncio.create_task(format_and_print_message(recipient_name, sender_name, massage))
+        await format_and_print_message(recipient_name, sender_name, massage)
     print("-------------\n")
     return False, None
 
@@ -187,5 +185,4 @@ cancellation_token=cancellation_token
         global_vars.execute_core.send_to_client("solution/panel/update",
                 {
                     "solution":md_content,
-                    "agent_name":sender_name
                 })
