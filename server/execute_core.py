@@ -50,70 +50,84 @@ class ExecuteCore():
 
         for agent_info in self.agents:
             if(agent_info['name']=="ProcessManager"):
-                agent = VAgent(
-                    name="ProcessManager",
-                    model_client=global_vars.cached_process_manager_model,
-                    description="Manages task progress, assigns tasks to Agents, coordinating efforts, and communicates with users.",
-                    system_message=f'''You are ProcessManager, responsible for managing task execution progress, assigning tasks to Agents, coordinating efforts, and communicating with users.
+                system_message=f'''You are ProcessManager, responsible for managing task execution progress, assigning tasks to Agents, coordinating efforts, and communicating with users.
 You need to:
 - Assign tasks, guide progress, and coordinate with team members and the human user based on the team member descriptions in the `<teamMember>` tag.
 - Use the task steps provided in the `<steps>` tag to determine the current task progress:
+
+<teamMember>
+{agents_intro}</teamMember>
 
 <steps>
 {self.steps}
 </steps>
 
-<teamMember>
-{agents_intro}
-</teamMember>
-
 Important:
-- 你必须全程使用中文
+- Always communicate in Chinese.
 - You are **forbidden** to proceed to the next step on your own. After completing one step, you **must** ask the user for approval before proceeding to the next step.
 - Your responsibility is to manage task execution progress and assign tasks to Agents. You are **forbidden** from executing tasks yourself.
 
 Output Format:
 - In the target field, based on the team member descriptions in the <teamMember> tag, specify the appropriate interaction recipient.
-    - If you need user input or additional information, set User.
     - If delegating tasks, seeking advice, or communicating with another Agent, specify the Agent's name.
-    - To update progress (e.g., upon task completion), interact with ProcessManager.
-    - If further thinking is required, specify yourself again.- In the `answer` field, provide the content you want to communicate with the target team member.
+    - If further thinking is required, specify yourself again.
+    - Specify User if you need to advance the task's next step, ask questions or gather more information
+- In the `answer` field, provide the content you want to communicate with the target team member.
 - In the `current_step` field, determine and specify the current task step based on the context.
-Follow the JSON format.''',
-                    )
+Follow the JSON format.'''
+                agent = VAgent(
+                    name="ProcessManager",
+                    model_client=global_vars.cached_process_manager_model,
+                    description="Manages task progress, assigns tasks to Agents, coordinating efforts, and communicates with users.",
+                    system_message=system_message,)
+                
+                print('------\nSYSTEM_MSG:'+system_message+"--------\n\n")
             else:
+                system_message=f"""You are {agent_info['name']}, {agent_info['system_message']}.
+Important:
+- Always communicate in Chinese.
+- As shown in the `<teamMember>` tag, you are collaborating with other Agents to solve the user's problem. The task breakdown is provided in the `<steps>` tag.  
+- Focus only on your designated responsibilities and complete them to the best of your ability. Other team members will handle their specialized tasks, with `ProcessManager` coordinating team collaboration.  
+
+<teamMember>
+{agents_intro}</teamMember>
+
+<steps>
+{self.steps}
+</steps>
+"""
+                if not self.is_web:
+                    system_message+="""
+Task Execution Rules:
+- You are **forbidden** from completing the entire step at once. You must first gather enough background information and user preferences, then discuss the plan step-by-step with the user.
+- Since the user has no experience with the task, you need to ask **inspiring** questions to uncover implicit constraints or user needs. These questions should help the user explore and complete the task in a detailed and comprehensive way, such as:
+  - Additional information needed to solve the problem
+  - Potential user needs or overlooked requirements
+- If multiple options exist during the planning process, you cannot make decisions on your own. Provide sufficient background information and ask the user for their input.  
+- You must actively recommend options to the user with specific and real information. Do not fabricate or create content."""             
+                if self.is_single:
+                    system_message+="""
+
+Output Format:
+- In the `target` field, If you need user input or additional information, set User. If further thinking is required, set yourself. 
+- In the `answer` field, provide the content you want to communicate with User."""
+                else:
+                    system_message+=f"""
+                    
+Output Format:
+- In the `target` field, based on the team member descriptions in the `<teamMember>` tag, specify the appropriate interaction recipient:  
+  - **In most cases, set `User`** to gather additional information, refine the task iteratively, stimulate the user's thinking, and understand their preferences, choices, and decisions. Your primary role is to **collaborate iteratively** with the user to complete task planning.  
+  - If delegating tasks, seeking advice, or communicating with another Agent, set the Agent's name.  
+  - If further thinking is required, set yourself.  
+  - If your specialized task is complete **or you want to advance the task's next step**, interact with `ProcessManager` to coordinate progress.  
+- In the `answer` field, provide the content you want to communicate with the target team member."""
+                    
                 agent = VAgent(
                     name=agent_info['name'],
                     model_client=global_vars.cached_agent_model,
                     description=f"{agent_info['system_message']}",
-                    system_message=f"""You are {agent_info['name']}, {agent_info['system_message']}.
-Important:
-- 你必须全程使用中文"""
-+ #这里是主动引导机制，归给VR，Web时禁用
-"""
-- You are **forbidden** from completing the entire plan at once. You must first gather enough background information or user preferences and discuss the plan step-by-step with the user.
-- Since the user has no experience with the task, you need to ask **inspiring** questions to uncover implicit constraints or user needs. These questions should help the user explore and complete the task in a detailed and comprehensive way, such as:
-  - Additional information needed to solve the problem
-  - Potential user needs or overlooked requirements
-- When there are multiple options during the planning process, you cannot make the decision on your own. You should provide sufficient background information and ask the user for their input.
-- You need to actively recommend options to the user, using specific and real information. Do not fabricate or create content."""if not self.is_web else ""+"""
-
-Output Format:"""+"""
-- In the target field, based on the team member descriptions in the <teamMember> tag, specify the appropriate interaction recipient:
-    - If you need user input or additional information, set User.
-    - If delegating tasks, seeking advice, or communicating with another Agent, set the Agent's name.
-    - If further thinking is required, set yourself.
-    - If your task is complete or no further action is needed, interact with ProcessManager.
-- In the `answer` field, provide the content you want to communicate with the target team member.
-
-<teamMember>
-{agents_intro}
-</teamMember>"""if not self.is_single else"""
-- In the target field, based on the team member descriptions in the <teamMember> tag, specify the appropriate interaction recipient.
-    - If you need user input or additional information, set User.
-    - If further thinking is required, specify yourself again.
-- In the `answer` field, provide the content you want to communicate with User.
-""",)
+                    system_message=system_message)
+                print('------\nSYSTEM_MSG:'+system_message+"--------\n\n")
             agent_list.append(agent)
 
         agent_list.append(UserProxyAgent("User",
