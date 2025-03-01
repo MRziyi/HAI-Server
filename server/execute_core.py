@@ -80,8 +80,6 @@ Follow the JSON format.'''
                     model_client=global_vars.cached_process_manager_model,
                     description="Manages task progress, assigns tasks to Agents, coordinating efforts, and communicates with users.",
                     system_message=system_message,)
-                
-                print('------\nSYSTEM_MSG:'+system_message+"--------\n\n")
             else:
                 system_message=f"""You are {agent_info['name']}, {agent_info['system_message']}.
 Important:
@@ -127,7 +125,6 @@ Output Format:
                     model_client=global_vars.cached_agent_model,
                     description=f"{agent_info['system_message']}",
                     system_message=system_message)
-                print('------\nSYSTEM_MSG:'+system_message+"--------\n\n")
             agent_list.append(agent)
 
         agent_list.append(UserProxyAgent("User",
