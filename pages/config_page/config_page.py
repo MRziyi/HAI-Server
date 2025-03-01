@@ -12,6 +12,7 @@ pn.extension()  # for notebook
 class ConfigPage(Viewer):
     task_name = param.String()
     task_req = param.String()
+    is_web = param.Boolean(default=False)
 
     def __init__(self, **params):
         super().__init__(**params)
@@ -54,7 +55,11 @@ class ConfigPage(Viewer):
     
     def agents_confirm(self, agent_list_content):
         agent_list=agent_list_content.get_agents()
-        agent_list.insert(2,{"name": "ProcessManager", "avatar": "⏩️", "system_message": "负责管理任务执行进度，为Agent分配任务，或通过Admin向用户提问","chinese_name": "进度管理员"})
+        if self.is_web:
+            idx=0
+        else:
+            idx=2
+        agent_list.insert(idx,{"name": "ProcessManager", "avatar": "⏩️", "system_message": "负责管理任务执行进度，为Agent分配任务，或通过Admin向用户提问","chinese_name": "进度管理员"})
         confirmed_agents = f"## 任务「{self.task_name}」的Agents分配\n"
         for agent in agent_list:
             confirmed_agents += f'## {agent["avatar"]} {agent["chinese_name"]}\n'
@@ -71,7 +76,8 @@ class ConfigPage(Viewer):
     def steps_confirm(self,step_list_content):
         agent_list,step_list=step_list_content.get_lists()
         try:
-            with open('config/config_multi.txt', 'w') as f:  # 使用 'w' 模式写入文件
+            url='config/config_web.json' if self.is_web else 'config/config_multi.json'
+            with open(url, 'w') as f:  # 使用 'w' 模式写入文件
                 f.write(json.dumps(
                     {
                         "task_name":self.task_name,

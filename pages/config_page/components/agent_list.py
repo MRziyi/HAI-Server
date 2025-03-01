@@ -26,7 +26,7 @@ class AgentList(pn.viewable.Viewer):
         raw_agent_list = await global_vars.global_assistant.on_messages([
             TextMessage(source='user',content=f'''Recommend a suitable multi-Agent team for the task in the <task> tag. Refer to the example task in <example_task> and respond in the format provided in <example_output>, with only a JSON output.
 <task>{self.task_name}: {self.task_req}</task>'''+'''
-<example_task>Travel itinerary: Lead a team of 4 to Southeast University for an academic conference and visit famous landmarks in Nanjing. Consider time management, transportation, budget, and the preferences of each team member. Please provide a balanced and reasonable itinerary.</example_task>
+<example_task>Travel Planning: Visit famous landmarks in Nanjing with my friend. Consider time management, transportation, budget, and the preferences of each team member. Please provide a balanced and reasonable itinerary.</example_task>
 <example_output>
 [
     {
@@ -57,7 +57,7 @@ class AgentList(pn.viewable.Viewer):
 </example_output>
 
 Important:
-- name should be in camel case, avatar should use relevant emojis, system_message and chinese_name should be in Chinese.
+- name should be in camel case, avatar should use ONLY ONE relevant emojis, system_message and chinese_name should be in Chinese.
 - Decide the number of agents based on task requirements, with a maximum of 4 agents.''')], cancellation_token=cancellation_token
         )
         json_pattern = re.compile(r'```json\n(.*?)```', re.DOTALL)

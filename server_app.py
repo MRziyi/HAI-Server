@@ -14,7 +14,8 @@ from server.execute_core import ExecuteCore
 ws_app = FastAPI()
 
 parser = argparse.ArgumentParser(description="WebSocket server options")
-parser.add_argument('--single', action='store_true', help='Run in single mode')
+parser.add_argument('--single', action='store_true', help='Run in Single Agent mode')
+parser.add_argument('--web', action='store_true', help='Run in WebUI Service mode')
 
 # Parse the arguments
 args = parser.parse_args()
@@ -34,9 +35,8 @@ async def recv_from_client_listener(ws_manager: WebSocketManager):
             data = json_input.get("data")
             try:
                 json_data = json.loads(data)
-            except:
-                json_data=data
-                print("JSON Data: "+str(data))
+            except Exception as e:
+                print("data field decode ERROR: "+str(e))
         except Exception as e:
             print("raw_data decode ERROR: "+str(e))
         
@@ -88,7 +88,7 @@ async def websocket_endpoint(websocket: WebSocket):
         send_task = asyncio.create_task(send_to_client_listener(ws_manager))
         recv_task = asyncio.create_task(recv_from_client_listener(ws_manager))
         
-        global_vars.execute_core = ExecuteCore(ws_manager=ws_manager,is_single=args.single)
+        global_vars.execute_core = ExecuteCore(ws_manager=ws_manager,is_single=args.single,is_web=args.web)
 
         # Wait for both listeners and chat to complete
         await asyncio.gather(send_task, recv_task)

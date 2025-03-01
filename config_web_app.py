@@ -15,12 +15,17 @@ pn.extension(raw_css=[css])
 
 # 创建 Panel 服务器
 def init_web_page():
-    if len(sys.argv) < 3:
-        print("Usage: python config_web_app.py <task_name>")
-        sys.exit
-
-    index1 = int(sys.argv[1])
-    index2 = int(sys.argv[2])
+    if len(sys.argv) ==3:
+        index1 = int(sys.argv[1])
+        index2 = int(sys.argv[2])
+        is_web = 'not web'
+    elif len(sys.argv) == 4:
+        index1 = int(sys.argv[1])
+        index2 = int(sys.argv[2])
+        is_web = str(sys.argv[3])
+    else:
+        print("参数错误")
+        return
 
     with open('config/taskDef.json', 'r', encoding='utf-8') as f:
         task_def = json.load(f)
@@ -31,7 +36,7 @@ def init_web_page():
 
     task_req=f'{task_description}\n\n 我选择：{task_options[index1].get("optionInfo")}\n 我的朋友选择：{task_options[index2].get("optionInfo")}'
     
-    config = ConfigPage(task_name=task_name,task_req=task_req)
+    config = ConfigPage(task_name=task_name,task_req=task_req,is_web=is_web=="web")
     global_vars.app_layout[:] = [config]
     global_vars.app = pn.template.VanillaTemplate(title='VELVET')
     global_vars.app.main.append(global_vars.app_layout)

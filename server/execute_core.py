@@ -68,13 +68,16 @@ You need to:
 </teamMember>
 
 Important:
-- 使用中文
+- 你必须全程使用中文
 - You are **forbidden** to proceed to the next step on your own. After completing one step, you **must** ask the user for approval before proceeding to the next step.
 - Your responsibility is to manage task execution progress and assign tasks to Agents. You are **forbidden** from executing tasks yourself.
 
 Output Format:
-- In the `target` field, specify the team member you want to interact with (e.g., if you need to ask the user or gather more information, specify `User`; if you want to communicate with another Agent, delegate tasks, or seek advice, specify the Agent's name).
-- In the `answer` field, provide the content you want to communicate with the target team member.
+- In the target field, based on the team member descriptions in the <teamMember> tag, specify the appropriate interaction recipient.
+    - If you need user input or additional information, set User.
+    - If delegating tasks, seeking advice, or communicating with another Agent, specify the Agent's name.
+    - To update progress (e.g., upon task completion), interact with ProcessManager.
+    - If further thinking is required, specify yourself again.- In the `answer` field, provide the content you want to communicate with the target team member.
 - In the `current_step` field, determine and specify the current task step based on the context.
 Follow the JSON format.''',
                     )
@@ -85,22 +88,30 @@ Follow the JSON format.''',
                     description=f"{agent_info['system_message']}",
                     system_message=f"""You are {agent_info['name']}, {agent_info['system_message']}.
 Important:
-- 使用中文
+- 你必须全程使用中文"""
++ #这里是主动引导机制，归给VR，Web时禁用
+"""
 - You are **forbidden** from completing the entire plan at once. You must first gather enough background information or user preferences and discuss the plan step-by-step with the user.
 - Since the user has no experience with the task, you need to ask **inspiring** questions to uncover implicit constraints or user needs. These questions should help the user explore and complete the task in a detailed and comprehensive way, such as:
   - Additional information needed to solve the problem
   - Potential user needs or overlooked requirements
 - When there are multiple options during the planning process, you cannot make the decision on your own. You should provide sufficient background information and ask the user for their input.
-- You need to actively recommend options to the user, using specific and real information. Do not fabricate or create content.
+- You need to actively recommend options to the user, using specific and real information. Do not fabricate or create content."""if not self.is_web else ""+"""
 
 Output Format:"""+"""
-- In the `target` field, based on the team member descriptions in the `<teamMember>` tag, specify the team member (or yourself again) you want to interact with (e.g., if you need to ask the user or gather more information, specify `User`; if you want to communicate with another Agent, delegate tasks, or seek advice, specify the Agent's name; when adjusting progress (e.g., after a task is completed), communicate with ProcessManager).
+- In the target field, based on the team member descriptions in the <teamMember> tag, specify the appropriate interaction recipient.
+    - If you need user input or additional information, set User.
+    - If delegating tasks, seeking advice, or communicating with another Agent, specify the Agent's name.
+    - To update progress (e.g., upon task completion), interact with ProcessManager.
+    - If further thinking is required, specify yourself again.
 - In the `answer` field, provide the content you want to communicate with the target team member.
 
 <teamMember>
 {agents_intro}
 </teamMember>"""if not self.is_single else"""
-- In the `target` field, just fillin "User"
+- In the target field, based on the team member descriptions in the <teamMember> tag, specify the appropriate interaction recipient.
+    - If you need user input or additional information, set User.
+    - If further thinking is required, specify yourself again.
 - In the `answer` field, provide the content you want to communicate with User.
 """,)
             agent_list.append(agent)
@@ -110,13 +121,16 @@ Output Format:"""+"""
         
         return agent_list
     
-    def __init__(self, ws_manager:WebSocketManager,is_single:bool):
+    def __init__(self, ws_manager:WebSocketManager,is_single:bool,is_web:bool):
         self.is_single=is_single
+        self.is_web=is_web
         self.ws_manager=ws_manager
         if is_single:
-            self.init_config('config/config_single.txt')
+            self.init_config('config/config_single.json')
+        elif is_web:
+            self.init_config('config/config_web.json')
         else:   
-            self.init_config('config/config_multi.txt')
+            self.init_config('config/config_multi.json')
 
         self.send_to_client("config/info",
                     {
