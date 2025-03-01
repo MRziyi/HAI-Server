@@ -6,6 +6,13 @@ from pages.config_page.config_page import ConfigPage
 
 pn.extension()
 
+css = """
+#input{
+  font-size: 120%;
+}
+"""
+pn.extension(raw_css=[css])
+
 # 创建 Panel 服务器
 def init_web_page():
     if len(sys.argv) < 3:

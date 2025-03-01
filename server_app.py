@@ -72,7 +72,7 @@ async def recv_from_client_listener(ws_manager: WebSocketManager):
         cancellation_token=cancellation_token
             )
 
-            global_vars.execute_core.send_to_client("s olution/summary",
+            global_vars.execute_core.send_to_client("solution/summary",
                     {
                         "original_step":original_step,
                         "solution_summary":summary.chat_message.content
@@ -98,4 +98,4 @@ async def websocket_endpoint(websocket: WebSocket):
         await ws_manager.disconnect()
 
 if __name__ == "__main__":
-    uvicorn.run(ws_app, host="0.0.0.0", port=8001)
+    uvicorn.run(ws_app, host="0.0.0.0", port=8002)
