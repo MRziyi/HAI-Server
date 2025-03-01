@@ -99,11 +99,11 @@ Important:
 - You need to actively recommend options to the user, using specific and real information. Do not fabricate or create content."""if not self.is_web else ""+"""
 
 Output Format:"""+"""
-- In the target field, based on the team member descriptions in the <teamMember> tag, specify the appropriate interaction recipient.
+- In the target field, based on the team member descriptions in the <teamMember> tag, specify the appropriate interaction recipient:
     - If you need user input or additional information, set User.
-    - If delegating tasks, seeking advice, or communicating with another Agent, specify the Agent's name.
-    - To update progress (e.g., upon task completion), interact with ProcessManager.
-    - If further thinking is required, specify yourself again.
+    - If delegating tasks, seeking advice, or communicating with another Agent, set the Agent's name.
+    - If further thinking is required, set yourself.
+    - If your task is complete or no further action is needed, interact with ProcessManager.
 - In the `answer` field, provide the content you want to communicate with the target team member.
 
 <teamMember>
