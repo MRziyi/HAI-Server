@@ -64,7 +64,7 @@ async def recv_from_client_listener(ws_manager: WebSocketManager):
             original_step = json_data.get("original_step")
             cancellation_token = CancellationToken()
             summary = await global_vars.global_formatter.on_messages([
-                TextMessage(source='user',content=f'''Summarize the content within the <text> tag, keeping key points and presenting the result clearly and concisely. Use MarkDown format.
+                TextMessage(source='user',content=f'''Summarize the content within the <text> tag, keeping key points and presenting the result concisely.
         <text>
         {solution}
         </text>''')],

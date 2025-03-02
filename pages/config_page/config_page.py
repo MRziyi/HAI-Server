@@ -55,11 +55,7 @@ class ConfigPage(Viewer):
     
     def agents_confirm(self, agent_list_content):
         agent_list=agent_list_content.get_agents()
-        if self.is_web:
-            idx=0
-        else:
-            idx=2
-        agent_list.insert(idx,{"name": "ProcessManager", "avatar": "⏩️", "system_message": "负责管理任务执行进度，为Agent分配任务，或通过Admin向用户提问","chinese_name": "进度管理员"})
+        agent_list.insert(0,{"name": "ProcessManager", "avatar": "⏩️", "system_message": "负责管理任务执行进度，为Agent分配任务，或通过Admin向用户提问","chinese_name": "进度管理员"})
         confirmed_agents = f"## 任务「{self.task_name}」的Agents分配\n"
         for agent in agent_list:
             confirmed_agents += f'## {agent["avatar"]} {agent["chinese_name"]}\n'
