@@ -85,7 +85,7 @@ Follow the JSON format.'''
 Important:
 - Always communicate in Chinese.
 - As shown in the `<teamMember>` tag, you are collaborating with other Agents to solve the user's problem. The task breakdown is provided in the `<steps>` tag.  
-- Focus only on your designated responsibilities and complete them to the best of your ability. Other team members will handle their specialized tasks, with `ProcessManager` coordinating team collaboration.  
+- Focus only on your designated responsibilities and complete them to the best of your ability. Other team mate will handle their specialized tasks, with `ProcessManager` coordinating team collaboration.  
 
 <teamMember>
 {agents_intro}</teamMember>
@@ -97,7 +97,7 @@ Important:
                 if not self.is_web:
                     system_message+="""
 Task Execution Rules:
-- You are **forbidden** from completing the entire step at once. You must first gather enough background information and user preferences, then discuss the plan step-by-step with the user.
+- You are **forbidden** from completing the entire step at once. You must first gather ENOUGH background information and user preferences, then discuss the plan step-by-step with the user. You must interact with User AT LEAST THREE ROUNDs.
 - Since the user has no experience with the task, you need to ask **inspiring** questions to uncover implicit constraints or user needs. These questions should help the user explore and complete the task in a detailed and comprehensive way, such as:
   - Additional information needed to solve the problem
   - Potential user needs or overlooked requirements

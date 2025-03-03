@@ -44,7 +44,7 @@ async def print_message_callback(sender_name, massage):
 
 
     print(f"Messages from: {sender_name} sent to: {recipient_name} | message: {massage_content}")
-    if(len(massage_content) < 200 or global_vars.execute_core.is_web):
+    if(len(massage_content) < 130 or global_vars.execute_core.is_web):
         print_chat_message(recipient_name,sender_name, massage_content)
     else:
         print("[Formatting] Called from: "+sender_name)

@@ -26,37 +26,40 @@ class StepList(pn.viewable.Viewer):
     async def generate_step_list(self):
         cancellation_token = CancellationToken()
         raw_step_list = await global_vars.global_assistant.on_messages([
-            TextMessage(source='user',content=f'''You need to recommend appropriate steps for the task described in the <task> tag and assign the agents from the <agents> tag to each step. Please refer to the example task in the <example_task> tag and respond using the format provided in the <example_output> tag. Only return the JSON format.
+            TextMessage(source='user',content=f'''You need to recommend appropriate steps for the task described in the <task> tag and match every relevant agent from the <agents> tag to each step. Please refer to the example task in the <example_task> tag and respond using the format provided in the <example_output> tag. Only return the JSON format.
+
+Important:
+1. 每个步骤需体现"约束网络"特性，展示该步骤涉及的多个约束专家之间的协作关系
+2. 使用"协调X与Y的冲突"、"平衡A对B的影响"等表述反映约束间的动态权衡
+3. 每个步骤必须包含至少2个相关领域Agent的协作说明
+
 <task>{self.task_name}: {self.task_req}</task>
-<agents>{self.agents}</agents>'''+'''
-<example_task>Debate material preparation: I need to prepare materials for a debate, with the theme "Human nature is inherently evil", and prepare corresponding debate materials.</example_task>
+<agents>{self.agents}</agents>
+
+<example_task>辩论材料准备：我需要为"人性本恶"主题的辩论准备材料</example_task>'''+'''
 
 <example_output>
 [
     {
-        "name": "Define key concepts",
-        "content": "DefinitionAgent will collect and organize relevant definitions to ensure clarity."
+        "name": "核心概念界定",
+        "content": "定义专家（伦理维度）与哲学专家协作，协调'恶'的伦理定义与哲学基础之间的关联，法律专家将同步验证定义的法律适用性"
     },
     {
-        "name": "Provide background information",
-        "content": "BackgroundAgent will provide background information, including history and current status, to help understand the premise of the debate."
+        "name": "论点网络构建",
+        "content": "论点专家建立主张树时，历史专家提供案例支持，伦理专家确保主张合法性，矛盾协调员持续监测论点间的潜在冲突"
     },
     {
-        "name": "Collect key arguments",
-        "content": "ArgumentAgent will gather supporting arguments for the 'human nature is inherently evil' position, providing relevant facts, theories, and data."
+        "name": "反方预判矩阵",
+        "content": "反驳专家联合心理学专家预测对方策略，经济专家评估论点经济影响，风险控制员标记高风险反驳点"
     },
     {
-        "name": "Prepare rebuttal points",
-        "content": "RebuttalAgent will predict potential attacks from the opposing side and prepare rebuttal materials."
-    },
-    {
-        "name": "Integrate materials",
-        "content": "ProcessManager will integrate all collected materials to ensure logical coherence and completeness."
+        "name": "动态平衡验证",
+        "content": "逻辑专家协调哲学严谨性与现实可行性，伦理-法律双专家小组确保主张边界，优化专家进行最终权重调整"
     }
 ]
 </example_output>
 
-Note: Ensure that the `name` and `content` fields are in Chinese.''')], cancellation_token=cancellation_token
+Note: Ensure that the `name` and `content` fields are in Chinese.</prompt>''')], cancellation_token=cancellation_token
         )
 
         json_pattern = re.compile(r'```json\n(.*?)```', re.DOTALL)
