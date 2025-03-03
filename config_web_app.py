@@ -17,7 +17,7 @@ def init_web_page():
     if len(sys.argv) ==1:
         is_web = 'not web'
     elif len(sys.argv) == 2:
-        is_web = int(sys.argv[1])
+        is_web = str(sys.argv[1])
     else:
         print("参数错误")
         return
