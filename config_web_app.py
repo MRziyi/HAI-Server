@@ -28,7 +28,6 @@ def init_web_page():
     
     config = ConfigPage(task_name=task_name,task_req=task_req,is_web=is_web=="web")
     global_vars.app_layout[:] = [config]
-    global_vars.app = pn.template.VanillaTemplate(title='VELVET')
     global_vars.app.main.append(global_vars.app_layout)
     global_vars.app.modal.append(global_vars.modal_content)
 

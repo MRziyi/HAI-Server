@@ -11,7 +11,8 @@ from pydantic import BaseModel
 
 load_dotenv()  # 加载 .env 文件中的所有环境变量
 
-app = None
+
+app = pn.template.VanillaTemplate(title='VELVET')
 app_layout= pn.Column("Modal")
 modal_content = pn.Column("Modal")
 
