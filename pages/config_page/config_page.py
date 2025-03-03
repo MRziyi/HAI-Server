@@ -12,7 +12,6 @@ pn.extension()  # for notebook
 class ConfigPage(Viewer):
     task_name = param.String()
     task_req = param.String()
-    is_web = param.Boolean(default=False)
 
     def __init__(self, **params):
         super().__init__(**params)
@@ -72,7 +71,7 @@ class ConfigPage(Viewer):
     def steps_confirm(self,step_list_content):
         agent_list,step_list=step_list_content.get_lists()
         try:
-            url='config/config_web.json' if self.is_web else 'config/config_multi.json'
+            url='config/config.json'
             with open(url, 'w') as f:  # 使用 'w' 模式写入文件
                 f.write(json.dumps(
                     {

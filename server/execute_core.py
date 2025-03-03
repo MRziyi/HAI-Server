@@ -138,10 +138,8 @@ Output Format:
         self.ws_manager=ws_manager
         if is_single:
             self.init_config('config/config_single.json')
-        elif is_web:
-            self.init_config('config/config_web.json')
         else:   
-            self.init_config('config/config_multi.json')
+            self.init_config('config/config.json')
 
         self.send_to_client("config/info",
                     {
