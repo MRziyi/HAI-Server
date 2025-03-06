@@ -81,7 +81,8 @@ async def recv_from_client_listener(ws_manager: WebSocketManager):
 
 @ws_app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    ws_manager = WebSocketManager(websocket=websocket)
+    type='B' if args.web else 'C' if args.single else 'A'
+    ws_manager = WebSocketManager(websocket=websocket,type=type)
     await ws_manager.connect()
     try:
         # Start listeners as tasks
@@ -98,4 +99,4 @@ async def websocket_endpoint(websocket: WebSocket):
         await ws_manager.disconnect()
 
 if __name__ == "__main__":
-    uvicorn.run(ws_app, host="0.0.0.0", port=8000)
+    uvicorn.run(ws_app, host="0.0.0.0", port=8003)

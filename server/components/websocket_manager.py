@@ -5,12 +5,12 @@ import global_vars
 
 
 class WebSocketManager:
-    def __init__(self, websocket: WebSocket):
+    def __init__(self, type, websocket: WebSocket):
         self.websocket = websocket
         self.send_to_client_queue = asyncio.Queue()
         now = datetime.now()
         date_str = now.strftime("%m-%d@%H:%M")
-        self.file_path = f'history/{date_str}.tsv'
+        self.file_path = f'history/{date_str}-{type}.tsv'
         # Append the log entry to the file
 
     async def connect(self):
@@ -35,3 +35,4 @@ class WebSocketManager:
         # Append the log entry to the file
         with open(self.file_path, 'a') as file:
             file.write(log_entry)
+            print("!!LOGGING: \n"+log_entry)
