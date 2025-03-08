@@ -58,7 +58,7 @@ class AgentList(pn.viewable.Viewer):
 
 Important:
 - name should be in camel case, avatar should use ONLY ONE relevant emojis, system_message and chinese_name should be in Chinese.
-- Decide the number of agents based on task requirements, with a maximum of 4 agents.''')], cancellation_token=cancellation_token
+- Decide the role of 4 agents based on task requirements''')], cancellation_token=cancellation_token
         )
         json_pattern = re.compile(r'```json\n(.*?)```', re.DOTALL)
         json_match = json_pattern.search(raw_agent_list.chat_message.content)
