@@ -94,8 +94,8 @@ Important:
 {self.steps}
 </steps>
 """
-                if not self.is_web:
-                    system_message+="""
+                # if not self.is_web:
+                system_message+="""
 Task Execution Rules:
 - You are **forbidden** from completing the entire step at once. You must first gather ENOUGH background information and user preferences, then discuss the plan step-by-step with the user. You must interact with User AT LEAST THREE ROUNDs.
 - Since the user has no experience with the task, you need to ask **inspiring** questions to uncover implicit constraints or user needs. These questions should help the user explore and complete the task in a detailed and comprehensive way, such as:

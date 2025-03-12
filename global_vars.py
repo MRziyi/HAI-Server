@@ -53,9 +53,9 @@ cached_agent_model = ChatCompletionCache(agent_model, cache_store)
 
 advanced_model = OpenAIChatCompletionClient(
     model="gpt-4o",
+    temperature=0,
     api_key=os.environ["OPENAI_API_KEY"],)
 
-cached_advanced_model = ChatCompletionCache(advanced_model, cache_store)
 
 # advanced_model = OpenAIChatCompletionClient(
 #     model="deepseek-v3",
@@ -63,10 +63,13 @@ cached_advanced_model = ChatCompletionCache(advanced_model, cache_store)
 #     base_url="https://dashscope.aliyuncs.com/compatible-mode/v1")
 
 
+cached_advanced_model = ChatCompletionCache(advanced_model, cache_store)
+
+
 global_assistant= AssistantAgent(
             name='Assistant',
             system_message='You are the Assistant. Please refer to the given examples, fulfill the user\'s request and provide the output formatted according to the user’s requirements.',
-            model_client=advanced_model
+            model_client=cached_advanced_model
         )
 
 

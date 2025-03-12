@@ -26,7 +26,7 @@ class AgentList(pn.viewable.Viewer):
         raw_agent_list = await global_vars.global_assistant.on_messages([
             TextMessage(source='user',content=f'''Recommend a suitable multi-Agent team for the task in the <task> tag. Refer to the example task in <example_task> and respond in the format provided in <example_output>, with only a JSON output.
 <task>{self.task_name}: {self.task_req}</task>'''+'''
-<example_task>Travel Planning: Visit famous landmarks in Nanjing with my friend. Consider time management, transportation, budget, and the preferences of each team member. Please provide a balanced and reasonable itinerary.</example_task>
+<example_task>Travel Planning: Travel in Nanjing with my friend. Consider Accommodation, Transportation, Budget, and the Dining and Attractions preferences of us. Please provide a balanced and reasonable itinerary.</example_task>
 <example_output>
 [
     {
