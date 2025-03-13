@@ -44,10 +44,13 @@ async def print_message_callback(sender_name, massage):
 
 
     print(f"Messages from: {sender_name} sent to: {recipient_name} | message: {massage_content}")
-    if(len(massage_content) < 130 or global_vars.execute_core.is_web):
+    if(global_vars.execute_core.is_web):
+        print_chat_message(recipient_name,sender_name, massage_content)
+        if(len(massage_content) > 150):
+            asyncio.create_task(update_schedule(massage_content))
+    elif(len(massage_content) < 150):
         print_chat_message(recipient_name,sender_name, massage_content)
     else:
-        print("[Formatting] Called from: "+sender_name)
         await format_and_print_message(recipient_name, sender_name, massage)
     print("-------------\n")
     return False, None
@@ -173,7 +176,7 @@ cancellation_token=cancellation_token
         data = {}
 
     chat_content = data.get('chat', None)
-    if chat_content:
+    if chat_content and not global_vars.execute_core.is_web:
         print_chat_message(recipient_name,sender_name, chat_content)
         
     md_content = data.get('content', None)
@@ -181,8 +184,47 @@ cancellation_token=cancellation_token
         print("[Formatted] Called from: "+sender_name)
         print(md_content)
         print("-------------\n")
+
+        # asyncio.create_task(update_schedule(md_content))
         
         global_vars.execute_core.send_to_client("solution/panel/update",
                 {
                     "solution":md_content,
                 })
+
+async def update_schedule(raw_schedule):
+    original=global_vars.original_schedule
+    cancellation_token = CancellationToken()
+    summary = await global_vars.global_formatter.on_messages([
+        TextMessage(source='user',content=f'''Update the existing solution based on the supplementary information.
+
+- The `<original>` tag contains the current solution.
+- The `<update>` tag contains additional or modified information that may need to be incorporated.
+
+**Update Rules:**
+
+1. If `<update>` is unrelated to `<original>`, return `<original>` as is.
+2. If `<update>` adds new information relevant to `<original>`, **append** it while keeping the content intact. Formatting adjustments are allowed, but **no summarization or omissions**.
+3. If `<update>` modifies any part of `<original>`, **replace the corresponding section** with `<update>`’s content. Formatting adjustments are allowed, but **no summarization or omissions**. The modified text should be marked in *italics*.
+
+**Return the updated `<original>` content.**
+
+<original>
+
+{original}
+
+</original>
+
+<update>
+
+{raw_schedule}
+
+</update>''')],
+
+cancellation_token=cancellation_token
+    )
+    global_vars.original_schedule = summary.chat_message.content
+    global_vars.execute_core.send_to_client("schedule/update",
+            {
+                "schedule":global_vars.original_schedule
+            })

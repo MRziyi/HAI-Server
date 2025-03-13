@@ -24,6 +24,8 @@ groupchat_manager=None
 execute_core=None
 req_ans_agent_name=''
 
+original_schedule=''
+
 
 cache_store = DiskCacheStore[CHAT_CACHE_VALUE_TYPE](Cache('cache/'))
 

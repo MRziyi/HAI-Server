@@ -32,11 +32,14 @@ async def recv_from_client_listener(ws_manager: WebSocketManager):
         try:
             json_input = json.loads(raw_input)
             type = json_input.get("type")
-            data = json_input.get("data")
-            try:
-                json_data = json.loads(data)
-            except Exception as e:
-                print("data field decode ERROR: "+str(e))
+            data = json_input.get('data')
+            if isinstance(data, str):  # 只有 data 是字符串时才解析
+                try:
+                    json_data = json.loads(data)
+                except json.JSONDecodeError as e:
+                    print("data field decode ERROR: "+str(e))
+            else:
+                json_data = data  # 直接使用字典
         except Exception as e:
             print("raw_data decode ERROR: "+str(e))
         
