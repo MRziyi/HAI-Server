@@ -99,4 +99,4 @@ async def websocket_endpoint(websocket: WebSocket):
         await ws_manager.disconnect()
 
 if __name__ == "__main__":
-    uvicorn.run(ws_app, host="0.0.0.0", port=8003)
+    uvicorn.run(ws_app, host="0.0.0.0", port=8000)
