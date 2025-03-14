@@ -76,6 +76,8 @@ def selector_func(messages: Sequence[AgentEvent | ChatMessage]) -> str | None:
         json_content = json_match.group(1)
     else:
         json_content = messages[-1].content
+    
+    json_content = json_content.replace("\n", "")
     try:
         data = json.loads(json_content)
     except json.JSONDecodeError as e:
