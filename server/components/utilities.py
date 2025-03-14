@@ -47,7 +47,7 @@ async def print_message_callback(sender_name, massage):
     if(global_vars.execute_core.is_web):
         print_chat_message(recipient_name,sender_name, massage_content)
         if(len(massage_content) > 150):
-            asyncio.create_task(update_schedule(massage_content))
+            asyncio.create_task(format_and_print_message(recipient_name, sender_name, massage))
     elif(len(massage_content) < 150):
         print_chat_message(recipient_name,sender_name, massage_content)
     else:
